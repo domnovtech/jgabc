@@ -1,0 +1,6 @@
+# Check these out as LF even when core.autocrlf is set. The page parser
+# also accepts CRLF, so an already-converted working tree still renders.
+*.md text eol=lf
+dominican-tones.html text eol=lf
+dominican-tones.css text eol=lf
+dominican-tones.js text eol=lf

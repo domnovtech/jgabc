@@ -2,7 +2,9 @@
   var LATIN_URL = "dominican-tones-latin.md";
   var ENGLISH_URL = "dominican-tones-english.md";
   var ROMAN = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8 };
-  var gabcPattern = /```gabc\n([\s\S]*?)\n```/g;
+  // A Windows checkout (core.autocrlf) rewrites the Markdown as CRLF, and a
+  // fence may also carry trailing spaces. Require neither to be absent.
+  var gabcPattern = /[ \t]{0,3}```[ \t]*gabc[ \t]*\n([\s\S]*?)\n[ \t]{0,3}```[ \t]*/g;
 
   var chants = [];
   var layoutWidth = 0;
@@ -82,23 +84,29 @@
     return html;
   }
 
+  function normalizeNewlines(value) {
+    return String(value).replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  }
+
   function tokenize(markdown) {
+    var text = normalizeNewlines(markdown);
     var tokens = [];
     var last = 0;
-    gabcPattern.lastIndex = 0;
     var match;
-    while ((match = gabcPattern.exec(markdown))) {
-      tokens.push({ type: "text", text: markdown.slice(last, match.index) });
+    gabcPattern.lastIndex = 0;
+    while ((match = gabcPattern.exec(text))) {
+      tokens.push({ type: "text", text: text.slice(last, match.index) });
       tokens.push({ type: "gabc", gabc: match[1] });
       last = match.index + match[0].length;
     }
-    tokens.push({ type: "text", text: markdown.slice(last) });
+    tokens.push({ type: "text", text: text.slice(last) });
     return tokens;
   }
 
   function headerField(gabc, key) {
-    var end = gabc.match(/(?:^|\n)%%\s?\n/);
-    var head = end ? gabc.slice(0, end.index) : gabc;
+    var text = normalizeNewlines(gabc);
+    var end = text.match(/(?:^|\n)%%[ \t]*\n/);
+    var head = end ? text.slice(0, end.index) : text;
     var escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     var match = new RegExp("(?:^|\\n)" + escaped + ":\\s*([^;\\r\\n]*)", "i").exec(head);
     return match ? match[1].trim() : null;

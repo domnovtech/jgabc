@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dominican Psalm Tones</title>
+  <link rel="icon" href="icon/clear-main.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="dominican-tones.css">
+</head>
+<body>
+  <div class="page">
+    <header class="banner">
+      <h1>Dominican Psalm Tones</h1>
+      <p class="source-note">From the psalm-tone section of the Dominican <i lang="la">Processionarium</i>, Tones I to VIII, with the Latin text and an English translation. Each chant example is shown once, between the paired passages.</p>
+      <nav class="tone-nav" aria-label="Tones">
+        <a href="#tone-1">I</a>
+        <a href="#tone-2">II</a>
+        <a href="#tone-3">III</a>
+        <a href="#tone-4">IV</a>
+        <a href="#tone-5">V</a>
+        <a href="#tone-6">VI</a>
+        <a href="#tone-7">VII</a>
+        <a href="#tone-8">VIII</a>
+      </nav>
+    </header>
+    <div class="pair colhead" aria-hidden="true">
+      <div class="cell">Latin</div>
+      <div class="cell en">English</div>
+    </div>
+    <main id="tones"></main>
+    <p id="render-status" class="render-status" role="status"></p>
+  </div>
+  <script src="jquery.min.js"></script>
+  <script src="exsurge.min.js"></script>
+  <script src="util.js"></script>
+  <script src="dominican-tones.js"></script>
+</body>
+</html>

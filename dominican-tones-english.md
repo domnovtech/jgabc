@@ -521,7 +521,7 @@ name: Tone 6 model psalmody (De Psalmis sexti Toni);
 mode: 6;
 initial-style: 0;
 %%
-(c4) Sex(f)tus(gh) To(h)nus(h) sic(h) ín(h)ci(h)pit,(h) et(h) sic(h) flé(h)cti(g)tur(g) †(,) et(h) sic(h) (ix) me(ixi)di(h)á(g)tur,(h) *(:) et(h) sic(f) fi(gh)ní(g)tur.(f) (::)
+(c4) Sex(f)tus(gh) To(h)nus(h) sic(h) ín(h)ci(h)pit,(h) et(h) sic(h) flé(h)cti(g)tur(g) †(,) et(h) sic(h) me(ixi)di(h)á(g)tur,(h) *(:) et(h) sic(f) fi(gh)ní(g)tur.(f) (::)
 ```
 
 1. The *intonation, flex and mediant* of the Sixth Tone are the same as those of the First Tone, p. 355.

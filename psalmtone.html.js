@@ -79,6 +79,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
         gabc += applyPsalmTone({
           text: line[0].trim(),
           gabc: gMediant,
+          clef: clef,
           useOpenNotes: usePunctaCava,
           useBoldItalic: true,
           firstPrefix: (!useInitStyle),
@@ -95,6 +96,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
           applyPsalmTone({
             text: line[1].trim(),
             gabc: gTermination,
+            clef: clef,
             useOpenNotes: usePunctaCava,
             useBoldItalic: true,
             firstPrefix: (!useInitStyle),
@@ -112,7 +114,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
         }
         if(!result.shortened)firstVerse=false;
       } else {
-        if(gabc && !flex) {
+        if(gabc && !flex && !(medTones && medTones.rules && /magnificat|benedictus/.test(medTones.rules))) {
           var flexI = line[0].indexOf(sym_flex);
           if(flexI >= 0) {
             var syls = getSyllables(line[0].slice(0,flexI));
@@ -130,6 +132,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
             gabc += "<i>Flex:</i>() " + applyPsalmTone({
               text: syls,
               gabc: getFlexGabc(medTones),
+              clef: clef,
               useOpenNotes: false,
               useBoldItalic: false,
               firstPrefix: true,
@@ -158,6 +161,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
           applyPsalmTone({
             text: gloria_patri_end_vowels,
             gabc: removeIntonation($.extend(true,{},gTermination)),
+            clef: clef,
             useOpenNotes: false,
             useBoldItalic: false,
             firstPrefix: true,
@@ -225,6 +229,13 @@ function updateText() {
   updateEditor();
 }
 
+function syncDominicanToneControls(t) {
+  var isDom = !!(t && t.rules && String(t.rules).indexOf('dominican-1') === 0);
+  $("#cbSolemn").prop('disabled', isDom);
+  if (isDom && $("#cbSolemn")[0].checked) $("#cbSolemn")[0].checked = false;
+  $("#cbSolemn").attr('title', isDom ? 'Dominican Tone I has no solemn form. Magnificat and Benedictus are separate entries in the tone list, and they are not used for Nunc dimittis.' : '');
+  $("#versegabc").attr('title', isDom ? 'The [dominican-1] tag at the start of each line selects the Tone I rules. You can edit the pitches after the tag. Removing the tag uses the ordinary psalm-tone engine on that line.' : '');
+}
 function updateEndings() {
   //update text of delete tone button
   var name = $("#selTones").val();
@@ -237,6 +248,7 @@ function updateEndings() {
   localStorage.selTones = tone;
   var endings = getEndings(tone);
   var t = g_tones[tone];
+  syncDominicanToneControls(t);
   _clef = t.clef;
   var solemn=$("#cbSolemn")[0].checked;
   var vgabc = (solemn&&t.solemn)||t.mediant;
@@ -258,6 +270,7 @@ function updateEndings() {
 function updateEnding() {
   var tone = $("#selTones").val();
   var selEnd = $("#selEnd").val();
+  syncDominicanToneControls(g_tones[tone]);
   var solemn = $("#cbSolemn")[0].checked;
   if(solemn)$("#cbRepeatIntonation")[0].checked=localStorage.cbRepeatIntonation=repeatIntonation=true;
   localStorage.selEnd = selEnd;
@@ -677,11 +690,11 @@ function downloadAll(e){
             for(var ending in ctone.terminations){
               ctermination=ctone.terminations[ending];
               addPsalm(psalmNum,text,t,ending,ctone.mediant+"\n"+ctermination,shortMediant);
-              if(alsoSolemn)addPsalm(psalmNum,text,t,ending,ctone.solemn+"\n"+ctermination,ctone.shortSolemn||shortMediant,true);
+              if(alsoSolemn && ctone.solemn)addPsalm(psalmNum,text,t,ending,ctone.solemn+"\n"+ctermination,ctone.shortSolemn||shortMediant,true);
             }
           } else {
             addPsalm(psalmNum,text,t,"",ctone.mediant+"\n"+ctone.termination,shortMediant);
-            if(alsoSolemn)addPsalm(psalmNum,text,t,"",ctone.solemn+"\n"+ctermination,ctone.shortSolemn||shortMediant,true);
+            if(alsoSolemn && ctone.solemn)addPsalm(psalmNum,text,t,"",ctone.solemn+"\n"+ctermination,ctone.shortSolemn||shortMediant,true);
           }
         }
         ++i;

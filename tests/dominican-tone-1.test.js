@@ -57,8 +57,6 @@ var med = context.g_tones['1. Dominican'].mediant;
 var endRe = context.g_tones['1. Dominican'].terminations['1 re'];
 var endSol = context.g_tones['1. Dominican'].terminations['2 sol'];
 var endLa = context.g_tones['1. Dominican'].terminations['3 la'];
-var mag = context.g_tones['1. Dominican Magnificat'].mediant;
-var ben = context.g_tones['1. Dominican Benedictus'].mediant;
 
 describe('Dominican Tone I mediant', function() {
   test('intonation on the first two syllables, then the tenor', function() {
@@ -147,37 +145,15 @@ describe('Dominican Tone I terminations', function() {
   });
 });
 
-describe('Dominican Tone I Magnificat and Benedictus', function() {
-  test('Magnificat verse 1 has intonation and no mediant', function() {
-    expect(pitches(chant('Magníficat', mag, { includeIntonation: true, verseNumber: 1 }))).toBe('Ma=f gní=gh fi=h cat=h');
-  });
-  test('later Magnificat verses have the canticle mediant and the intonation', function() {
-    expect(pitches(chant('Et exsultávit spíritus meus', mag, { includeIntonation: true, verseNumber: 2 }))).toBe('Et=f ex=gh sul=h tá=h vit=hg spí=gixi ri=h tus=h me=hg us=gh');
-  });
-  test('a final monosyllable shifts the canticle accent back', function() {
-    // magna and potens are ma-gna and pot-ens here; gna is the syllable before the accent, ens the penult.
-    expect(pitches(chant('Quia fecit mihi magna qui potens est', mag, { includeIntonation: true, verseNumber: 2 }))).toBe('Qui=f a=gh fe=h cit=h mi=h hi=h ma=h gna=hg qui=gixi pot=h ens=hg est=gh');
-  });
-  test('Benedictus keeps the mediant on verse 1, and Israël does not shift past Deus', function() {
-    var out = chant('Benedíctus Dóminus Deus Israél', ben, { includeIntonation: true, verseNumber: 1 });
-    expect(pitches(out)).toContain('Be=f ne=gh');
-    expect(pitches(out)).toContain('nus=hg De=gixi us=h Is=h ra=hg él=gh');
-  });
-  test('no flex on the gospel canticles', function() {
-    var out = chant('Et exsultávit † spíritus meus', mag, { includeIntonation: true, verseNumber: 2 });
-    expect(out).not.toContain('†');
-    expect(pitches(out)).not.toContain('vit=g');
-  });
-  test('canticle terminations are the psalm terminations', function() {
-    expect(pitches(chant('ánima mea Dóminum', endSol, { includeIntonation: true }))).toBe('á=h ni=h ma=h me=g a=f Dó=gh mi=g num=g');
-  });
-});
-
 describe('Roman tones stay on the ordinary engine', function() {
   test('Tone I Dominican is an extra dropdown entry and does not replace tone 1', function() {
     expect(context.g_tones['1.'].mediant).toBe("f gh hr 'ixi hr 'g hr h.");
     expect(context.g_tones['1. Dominican'].rules).toBe('dominican-1');
     expect(context.d_tones['1. Dominican'].rules).toBe('dominican-1');
+    expect(context.g_tones['1. Dominican Magnificat']).toBeUndefined();
+    expect(context.g_tones['1. Dominican Benedictus']).toBeUndefined();
+    expect(context.d_tones['1. Dominican Magnificat']).toBeUndefined();
+    expect(context.d_tones['1. Dominican Benedictus']).toBeUndefined();
     expect(Object.keys(context.g_tones['1. Dominican'].terminations)).toEqual(['1 re', '2 sol', '3 la']);
   });
   test('a Roman formula is unchanged', function() {

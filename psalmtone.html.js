@@ -114,7 +114,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
         }
         if(!result.shortened)firstVerse=false;
       } else {
-        if(gabc && !flex && !(medTones && medTones.rules && /magnificat|benedictus/.test(medTones.rules))) {
+        if(gabc && !flex) {
           var flexI = line[0].indexOf(sym_flex);
           if(flexI >= 0) {
             var syls = getSyllables(line[0].slice(0,flexI));
@@ -233,7 +233,7 @@ function syncDominicanToneControls(t) {
   var isDom = !!(t && t.rules && String(t.rules).indexOf('dominican-1') === 0);
   $("#cbSolemn").prop('disabled', isDom);
   if (isDom && $("#cbSolemn")[0].checked) $("#cbSolemn")[0].checked = false;
-  $("#cbSolemn").attr('title', isDom ? 'Dominican Tone I has no solemn form. Magnificat and Benedictus are separate entries in the tone list, and they are not used for Nunc dimittis.' : '');
+  $("#cbSolemn").attr('title', isDom ? 'Dominican Tone I has no solemn form.' : '');
   $("#versegabc").attr('title', isDom ? 'The [dominican-1] tag at the start of each line selects the Tone I rules. You can edit the pitches after the tag. Removing the tag uses the ordinary psalm-tone engine on that line.' : '');
 }
 function updateEndings() {

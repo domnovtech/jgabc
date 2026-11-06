@@ -230,7 +230,7 @@ function updateText() {
 }
 
 function syncDominicanToneControls(t) {
-  var isDom = !!(t && t.rules && String(t.rules).indexOf('dominican-1') === 0);
+  var isDom = !!(t && t.rules && String(t.rules).indexOf('dominican-') === 0);
   $("#cbSolemn").prop('disabled', isDom);
   if (isDom && $("#cbSolemn")[0].checked) $("#cbSolemn")[0].checked = false;
   $("#cbSolemn").attr('title', isDom ? 'Dominican Tone I has no solemn form.' : '');

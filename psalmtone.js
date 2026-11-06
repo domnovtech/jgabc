@@ -354,8 +354,37 @@ var d_tones = {'1.':{clef:"c4",
       '3 la': "[dominican-1-termination] hr g f 'gh gr h."
     }
   };
-  g_tones['1. Dominican'] = psalm;
-  d_tones['1. Dominican'] = JSON.parse(JSON.stringify(psalm));
+  var tones = {
+    '1. Dominican': psalm,
+    '2. Dominican': { clef: 'f3', rules: 'dominican-2',
+      mediant: "[dominican-2] e f hr 'i hr h.",
+      termination: "[dominican-2-termination] h g e f." },
+    '3. Dominican': { clef: 'c4', rules: 'dominican-3',
+      mediant: "[dominican-1] g hj jr 'k jr 'i jr j.",
+      termination: "[dominican-3-termination] j ji hi h g gh." },
+    '4. Dominican': { clef: 'c4', rules: 'dominican-4',
+      mediant: "[dominican-4] h gh hr g h i h.",
+      termination: "[dominican-4-termination] g h ih gf e." },
+    '4. Dominican alt': { clef: 'c3', rules: 'dominican-4-alt',
+      mediant: "[dominican-4-alt] i hi ir h i j i.",
+      termination: "[dominican-4-alt-termination] h i j h f." },
+    '5. Dominican': { clef: 'c3', rules: 'dominican-5',
+      mediant: "[dominican-5] d f hr 'i hr h.",
+      termination: "[dominican-5-termination] h i g h f." },
+    '6. Dominican': { clef: 'c4', rules: 'dominican-6',
+      mediant: "[dominican-1] f gh hr 'ixi hr 'g hr h.",
+      termination: "[dominican-6-termination] f gh g f." },
+    '8. Dominican': { clef: 'c4', rules: 'dominican-8',
+      mediant: "[dominican-8] g h jr 'k jr j.",
+      terminations: {
+        'G': "[dominican-8-termination] i j h g.",
+        'c': "[dominican-8-termination-c] h j k j."
+      } }
+  };
+  Object.keys(tones).forEach(function(name) {
+    g_tones[name] = tones[name];
+    d_tones[name] = JSON.parse(JSON.stringify(tones[name]));
+  });
 })();
 var Syl = (function(){
   var intUpdate=setTimeout(function(){Syl.updateWords();},8000);
@@ -734,7 +763,9 @@ function op1MarkAccents(words) {
     });
     if (written) return;
     if (syls.length === 1) {
-      syls[0].accent = !OP1_ATONIC[op1Fold(syls[0].sylnospace)];
+      var key = op1Fold(syls[0].sylnospace);
+      // One-letter syllables are the euouae vowels, not lexical words.
+      syls[0].accent = key.length >= 2 && !OP1_ATONIC[key];
     } else if (syls.length === 2) {
       syls[0].accent = true;
     } else {
@@ -881,6 +912,217 @@ function applyDominicanTone1(options, rules) {
   return fillCount(prefix) + out.replace(/\s+$/, '') + fillCount(suffix);
 }
 
+function opBare(s) { return String(s || '').replace(/r/g, '').replace(/\./g, ''); }
+function opFromEnd(word) {
+  var acc = op1AccentSyl(word);
+  if (!acc) return -1;
+  return word.syls.length - 1 - word.syls.indexOf(acc);
+}
+function opPaintEnd(notes, pattern) {
+  var start = notes.length - pattern.length;
+  for (var i = 0; i < pattern.length; i++) if (start + i >= 0) notes[start + i] = pattern[i];
+}
+function opExtendedCadence(words) {
+  var last = words[words.length - 1];
+  var prev = words[words.length - 2];
+  if (!last) return false;
+  if (last.syls.length >= 3 && opFromEnd(last) === 2) return true;
+  if (last.syls.length === 1 && prev && prev.syls.length >= 2) return true;
+  return false;
+}
+function opShortNeumes(parsed, fb) {
+  var n = parsed && parsed.dominicanNotes;
+  if (n && n.length >= 6) return { init: [opBare(n[0]), opBare(n[1])], tenor: opBare(n[2]), raise: opBare(n[3]), after: opBare(n[4]) };
+  return fb;
+}
+function opApplyShortMediant(notes, syls, neum) {
+  var acc = null;
+  for (var i = syls.length - 1; i >= 0; i--) if (syls[i].accent) { acc = i; break; }
+  if (acc == null) acc = syls.length - 1;
+  notes[acc] = neum.raise;
+  for (var k = acc + 1; k < syls.length; k++) notes[k] = neum.after;
+  return acc;
+}
+function opT2UtDoubled(words) {
+  var last = words[words.length - 1];
+  var prev = words[words.length - 2];
+  if (!last) return false;
+  if (last.syls.length >= 3 && opFromEnd(last) === 2) return true;
+  if (last.syls.length === 2) return false;
+  if (last.syls.length === 1 && prev) {
+    if (prev.syls.length === 1) return false;
+    if (prev.syls.length <= 3) return true;
+    var pf = opFromEnd(prev);
+    if (pf === 1) return true;
+    return false;
+  }
+  return false;
+}
+function opT2Termination(notes, syls, words) {
+  var utN = opT2UtDoubled(words) ? 2 : 1;
+  var len = syls.length;
+  notes[len - 1] = 'f';
+  for (var u = 0; u < utN && len - 2 - u >= 0; u++) notes[len - 2 - u] = 'e';
+  var mi = len - 2 - utN;
+  if (mi < 0) return mi;
+  notes[mi] = 'g';
+  var word = null, wi = -1;
+  for (var i = 0; i < words.length; i++) {
+    if (words[i].syls.indexOf(syls[mi]) >= 0) { word = words[i]; wi = i; break; }
+  }
+  var next = word && words[wi + 1];
+  var utStart = len - 1 - utN;
+  if (word && word.syls.length >= 3 && opFromEnd(word) === 2 && next && mi > 0 && word.syls.indexOf(syls[mi - 1]) >= 0) {
+    var nextI = syls.indexOf(next.syls[0]);
+    if (nextI >= utStart && nextI < len - 1) notes[mi - 1] = 'g';
+  }
+  return mi > 0 && notes[mi - 1] === 'g' ? mi - 1 : mi;
+}
+function opT4Mediant(notes, syls, words, p) {
+  var acc = null;
+  for (var i = syls.length - 1; i >= 0; i--) if (syls[i].accent) { acc = i; break; }
+  if (acc == null) acc = Math.max(0, syls.length - 2);
+  if (acc < syls.length - 1) for (var k = acc + 1; k < syls.length; k++) notes[k] = p.after;
+  else notes[acc] = p.si;
+  if (acc > 0) notes[acc - 1] = p.la;
+  if (acc > 1) notes[acc - 2] = p.sol;
+  if (acc < syls.length - 1) notes[acc] = p.si;
+  if (acc > 2) {
+    var syl = syls[acc - 3];
+    for (var w = 0; w < words.length; w++) {
+      var ix = words[w].syls.indexOf(syl);
+      if (ix < 0) continue;
+      if (words[w].syls.length >= 3 && opFromEnd(words[w]) === 2 && ix === words[w].syls.length - 2) notes[acc - 3] = p.sol;
+    }
+  }
+  return Math.max(0, acc - (notes[acc - 3] === p.sol ? 3 : 2));
+}
+function opT5Termination(notes, syls, words) {
+  var lastW = words[words.length - 1];
+  var prev = words[words.length - 2];
+  var lastAcc = op1AccentSyl(lastW);
+  if (lastW.syls.length === 1 && prev) lastAcc = op1AccentSyl(prev) || op1ForceAccent(prev);
+  else if (lastAcc && lastW.syls.indexOf(lastAcc) === 0 && lastW.syls.length <= 3 && prev && prev.syls.length === 1 && prev.syls[0].accent && prev.syls[0] !== lastAcc) {
+    prev.syls[0].accent = false;
+  }
+  var fromEnd = lastAcc ? lastW.syls.length - 1 - lastW.syls.indexOf(lastAcc) : -1;
+  var pen = null;
+  if (prev && prev.syls.length === 1 && !op1Written(prev) && ((lastW.syls.length === 3 && fromEnd === 1) || (lastW.syls.length === 4 && fromEnd === 2))) {
+    pen = prev.syls[0];
+  }
+  if (!pen && lastW.syls.length >= 4 && fromEnd === 1 && syls.length >= 4) pen = syls[syls.length - 4];
+  if (!pen && lastW.syls.length >= 5 && fromEnd === 2 && syls.length >= 5) pen = syls[syls.length - 5];
+  if (!pen && lastAcc) {
+    for (var i = syls.indexOf(lastAcc) - 1; i >= 0; i--) if (syls[i].accent) { pen = syls[i]; break; }
+  }
+  if (!lastAcc) return 0;
+  var li = syls.indexOf(lastAcc);
+  var pi = pen ? syls.indexOf(pen) : li;
+  notes[li] = 'h';
+  if (pi >= 0 && pi !== li) notes[pi] = 'i';
+  if (li - 1 > pi) notes[li - 1] = 'g';
+  for (var g = pi + 1; g < li - 1; g++) notes[g] = 'h';
+  for (var a = li + 1; a < syls.length; a++) notes[a] = 'f';
+  return pi >= 0 ? pi : li;
+}
+function opT3First(notes, words) {
+  var last = words[words.length - 1];
+  var prev = words[words.length - 2];
+  var third = words[words.length - 3];
+  var extended = opExtendedCadence(words);
+  var open = 'ji';
+  if (extended && prev && last.syls.length === 3 && opFromEnd(last) === 2 && opFromEnd(prev) === 2) open = 'i';
+  if (extended && last.syls.length === 1 && prev && prev.syls.length === 2 && third && third.syls.length >= 3 && opFromEnd(third) === 2) open = 'i';
+  opPaintEnd(notes, extended ? [open, 'hi', 'h', 'g', 'gh'] : ['ji', 'hi', 'h', 'gh']);
+  return notes.length - (extended ? 5 : 4);
+}
+function applyDominicanLater(options, rules) {
+  var clef = options.clef || (typeof _clef === 'string' ? _clef : 'c4');
+  var parsed = op1ReadNotes(options.gabc, clef);
+  var text = options.text;
+  var syls = (typeof text === 'string') ? getSyllables(text) : (text || []);
+  var bi = (options.format && options.format.verse) ? options.format : (bi_formats[options.format] || bi_formats.gabc);
+  var verseNum = options.verseNumber || '';
+  var prefix = (options.prefix && bi.verse && bi.verse[0]) || '';
+  var suffix = (options.suffix && bi.verse && bi.verse[1]) || '';
+  if (!options.firstPrefix && Number(verseNum) === 1) prefix = '';
+  function fillCount(s) {
+    return String(s || '').replace(/\(([^$]*)\$c([^)]*)\)/gi, String(verseNum ? ('$1' + verseNum + '$2') : '')).replace(/\$c/gi, String(verseNum));
+  }
+  if (!syls.length) return fillCount(prefix) + fillCount(suffix);
+  var words = op1GroupWords(syls);
+  op1MarkAccents(words);
+  var short = rules === 'dominican-2' || rules === 'dominican-5' || rules === 'dominican-8';
+  var neum = short ? opShortNeumes(parsed, { init: ['e', 'f'], tenor: 'h', raise: 'i', after: 'h' }) : null;
+  var tenorByRule = {
+    'dominican-4-alt-termination': 'i',
+    'dominican-8-termination': 'j',
+    'dominican-8-termination-c': 'j',
+    'dominican-3-termination': 'j'
+  };
+  var tenor = (neum && neum.tenor) || tenorByRule[rules] || (parsed.toneTenor || 'h');
+  if (rules.indexOf('termination') < 0 && !short && parsed.dominicanNotes && parsed.dominicanNotes.length >= 3) tenor = opBare(parsed.dominicanNotes[2]);
+  if (rules.indexOf('dominican-4') === 0 && rules.indexOf('termination') < 0) tenor = rules.indexOf('alt') >= 0 ? 'i' : 'h';
+  var notes = syls.map(function() { return tenor; });
+  var cadenceAt = syls.length;
+  if (short) cadenceAt = opApplyShortMediant(notes, syls, neum);
+  else if (rules === 'dominican-2-termination') cadenceAt = opT2Termination(notes, syls, words);
+  else if (rules === 'dominican-4') cadenceAt = opT4Mediant(notes, syls, words, { sol: 'g', la: 'h', si: 'i', after: 'h' });
+  else if (rules === 'dominican-4-alt') cadenceAt = opT4Mediant(notes, syls, words, { sol: 'h', la: 'i', si: 'j', after: 'i' });
+  else if (rules === 'dominican-4-termination') {
+    var ext = opExtendedCadence(words);
+    opPaintEnd(notes, ext ? ['g', 'h', 'ih', 'g', 'f', 'e'] : ['g', 'h', 'ih', 'gf', 'e']);
+    cadenceAt = notes.length - (ext ? 6 : 5);
+  } else if (rules === 'dominican-4-alt-termination') {
+    var extA = opExtendedCadence(words);
+    opPaintEnd(notes, extA ? ['h', 'i', 'j', 'h', 'f', 'f'] : ['h', 'i', 'j', 'h', 'f']);
+    cadenceAt = notes.length - (extA ? 6 : 5);
+  } else if (rules === 'dominican-5-termination') cadenceAt = opT5Termination(notes, syls, words);
+  else if (rules === 'dominican-6-termination') {
+    var ext6 = opExtendedCadence(words);
+    opPaintEnd(notes, ext6 ? ['f', 'gh', 'g', 'f', 'f'] : ['f', 'gh', 'g', 'f']);
+    cadenceAt = notes.length - (ext6 ? 5 : 4);
+  } else if (rules === 'dominican-8-termination') {
+    var ext8 = opExtendedCadence(words);
+    opPaintEnd(notes, ext8 ? ['i', 'j', 'h', 'g', 'g'] : ['i', 'j', 'h', 'g']);
+    cadenceAt = notes.length - (ext8 ? 5 : 4);
+  } else if (rules === 'dominican-8-termination-c') {
+    var last = words[words.length - 1], prev = words[words.length - 2], n = 4;
+    if (last && last.syls.length === 1 && prev && prev.syls.length >= 3 && opFromEnd(prev) === 2) n = 6;
+    else if (opExtendedCadence(words) || (last && last.syls.length === 1 && prev && prev.syls.length >= 2 && opFromEnd(prev) === 1)) n = 5;
+    opPaintEnd(notes, n === 6 ? ['h', 'j', 'k', 'j', 'j', 'j'] : n === 5 ? ['h', 'j', 'k', 'j', 'j'] : ['h', 'j', 'k', 'j']);
+    cadenceAt = notes.length - n;
+  } else if (rules === 'dominican-3-termination') cadenceAt = opT3First(notes, words);
+  if (cadenceAt < 0) cadenceAt = 0;
+  var flexNote = parsed.toneFlex || tenor;
+  for (var f = 0; f < syls.length; f++) {
+    if (!syls[f].flex || f >= cadenceAt) continue;
+    notes[f] = flexNote;
+    for (var b = f - 1; b >= 0; b--) {
+      if (syls[b].accent || b >= cadenceAt) break;
+      notes[b] = flexNote;
+    }
+  }
+  var includeIntonation = options.includeIntonation;
+  if (includeIntonation == null) includeIntonation = !(parsed && parsed.intonation === 0);
+  var init = neum ? neum.init : null;
+  if (!init && rules === 'dominican-4') init = ['h', 'gh'];
+  if (!init && rules === 'dominican-4-alt') init = ['i', 'hi'];
+  if (includeIntonation && init && rules.indexOf('termination') < 0 && cadenceAt >= 2) {
+    if (notes[0] === tenor) notes[0] = init[0];
+    if (syls.length > 1 && notes[1] === tenor) notes[1] = init[1];
+  }
+  var flexMark = (typeof gabcFlex === 'string' && gabcFlex) || '†';
+  var out = '';
+  for (var i = 0; i < syls.length; i++) {
+    var syl = syls[i];
+    out += (syl.prepunctuation || '') + (syl.sylnospace || '') + (syl.punctuation || '') + '(' + notes[i] + ')';
+    if (syl.flex && i < cadenceAt) out += ' ' + flexMark;
+    out += syl.space || '';
+  }
+  return fillCount(prefix) + out.replace(/\s+$/, '') + fillCount(suffix);
+}
+
 function applyPsalmTone(options) {
   var experimentalOxytones = new URLSearchParams(location.search).get('experimental') !== 'false';
   var text = options.text,
@@ -905,11 +1147,14 @@ function applyPsalmTone(options) {
   }
   var dominicanRules = (gabc && gabc.rules) || '';
   if (!dominicanRules && typeof gabc === 'string') {
-    var dominicanTag = gabc.match(/^\s*\[(dominican-1[^\]]*)\]/);
+    var dominicanTag = gabc.match(/^\s*\[(dominican-[^\]]*)\]/);
     if (dominicanTag) dominicanRules = dominicanTag[1];
   }
   if (dominicanRules && dominicanRules.indexOf('dominican-1') === 0) {
     return applyDominicanTone1(options, dominicanRules);
+  }
+  if (dominicanRules && dominicanRules.indexOf('dominican-') === 0) {
+    return applyDominicanLater(options, dominicanRules);
   }
   if(typeof(favor)=='string') {
     temp = {};
@@ -1293,7 +1538,7 @@ function getGabcTones(gabc,prefix,flexEqualsTenor,clef) {
   clef = clef || _clef || 'c4';
   var dominicanRules = null;
   if (typeof gabc === 'string') {
-    var dominicanTag = gabc.match(/^\s*\[(dominican-1[^\]]*)\]\s*/);
+    var dominicanTag = gabc.match(/^\s*\[(dominican-[^\]]*)\]\s*/);
     if (dominicanTag) {
       dominicanRules = dominicanTag[1];
       gabc = gabc.slice(dominicanTag[0].length);

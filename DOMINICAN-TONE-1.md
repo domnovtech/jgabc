@@ -1,25 +1,29 @@
-# Dominican Tone I in the psalm tone tool
+# Dominican psalm tones in the psalm tone tool
 
-Only the Tone I psalm tone is implemented. Tones II–VIII are not, and neither are the Magnificat or Benedictus mediants.
+Psalm tones only. No Magnificat or Benedictus formulas. Tones II–VIII below are in the same tone dropdown as `1. Dominican`; each ending is the termination dropdown. `4. Dominican alt` is the do-clef notation (c3), a separate Tone IV entry.
 
-## Where it is
+## Coverage
 
-In the tone dropdown, after the Roman tones: `1. Dominican`. Intonation is on verse 1 unless Repeat intonation is on. A † is the flex.
+| Entry | What is implemented |
+| --- | --- |
+| `1. Dominican` | Intonation, flex, long mediant, endings `1 re` `2 sol` `3 la` |
+| `2. Dominican` | Short mediant; one ending (mi ut re, with ut/mi doubling) |
+| `3. Dominican` | Mediant uses Tone I’s accent rules (the source says so) on re ut si ut. First termination only (`ji`/`i`, then hi h, optional g, gh) |
+| `4. Dominican` | Mediant (sol la before si; dactyl extends sol; no la after a final accent). First termination, 5 or 6 syllables |
+| `4. Dominican alt` | Same mediant and the second termination, a fourth higher, clef c3 |
+| `5. Dominican` | Short mediant; two-accent termination |
+| `6. Dominican` | Intonation, flex, and mediant are Tone I’s (the source says so). Its own 4- or 5-syllable termination |
+| `8. Dominican` | Short mediant; endings `G` (4 or 5 syllables) and `c` (4, 5, or 6) |
 
-The ending dropdown is that tone’s three terminations: `1 re`, `2 sol`, `3 la`. Solemn is turned off; Tone I has no solemn form. Choosing the ending is manual.
-
-## What the rules cover
-
-Psalm intonation (sol, then sol-la on syllable 2), flex a whole tone under the syllables after the accent, the long mediant (B-flat, la, sol, la, with sol doubled on a final proparoxytone), and all three terminations (sol-fa, podatus, sol up to the last note). Worked examples are in `tests/dominican-tone-1.test.js`.
+Pending: Tone III’s second termination; all of Tone VII (its mediant is the Tone I accent pattern on fa mi re mi, but the nine termination cases are not coded). No canticle tones.
 
 ## Hand-editing
 
-Each formula line starts with `[dominican-1]` or `[dominican-1-termination]`. The notes after the tag are the neumes the rules apply. Edit those pitches in the formula box; leave the tag in place. Delete the tag and that line is read by the ordinary engine again. The syllable rules themselves are `applyDominicanTone1` in `psalmtone.js`.
+The bracket tag selects the rule (`[dominican-2]`, `[dominican-6-termination]`, …). For a Tone I-shaped mediant (`1`, `3`, `6`) the notes after the tag are the neumes. Other rules read their pitches from `applyDominicanLater` in `psalmtone.js`; keep the tag, or the ordinary engine is used. Delete a tag to force that.
 
-## Not automatic
+## Limitations
 
-- No Hebrew list. A written accent is respected (`Síon`, `Jerúsalém`, `Dávid`). `Jerúsalem` with only the Latin accent is sung as a proparoxytone. `Aarón` is not given the Hebrew “second syllable before the ultima” figure.
-- Atonic words are a short explicit set (`a`, `ab`, `ad`, `cum`, `de`, `e`, `et`, `in`, `inter`, `ob`, `per`, `prae`, `pro`, `sine`, `sub`, and the same with capitals), not pp. 339–341. An unmarked word of three or more syllables is accented only when a stated Tone I rule names the syllable, or by the tool’s existing capital-vowel guess.
-- Syllable division is the tool’s Latin hyphenation, so a consonant can sit on a different syllable than in the printed examples (`Ind-ú-tus`, `bé-scet`). The role of each syllable (si, sol, final, and so on) still follows the rule.
-- The mediant B-flat is always `ixi`. Some printed examples write a bare `i`; the English note to Tone I treats that note as B-flat.
-- English spelling is not handled. The underlined verse view still counts accents the ordinary way; the gabc is the Tone I result.
+- No Hebrew list. A final accent is not treated as Hebrew. Ut-doubling and the longer cadences that the book triggers for a Hebrew word of three or more syllables apply when the written accent is on the antepenult, which is the same test as for a Latin proparoxytone. `Aarón` on a short mediant is right only if the accent is written on the last syllable (nothing follows the last accent).
+- Atonic monosyllables in use: `a ab ad cum de e et in inter ob per prae pro sine sub`. Provisional, not pp. 339–341. A one-letter syllable is not given an accent unless it is written.
+- Syllable division is the tool’s Latin hyphenation.
+- Tone I’s mediant B-flat is `ixi`. English spelling is not handled.

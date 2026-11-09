@@ -361,7 +361,10 @@ var d_tones = {'1.':{clef:"c4",
       termination: "[dominican-2-termination] h g e f." },
     '3. Dominican': { clef: 'c4', rules: 'dominican-3',
       mediant: "[dominican-1] g hj jr 'k jr 'i jr j.",
-      termination: "[dominican-3-termination] j ji hi h g gh." },
+      terminations: {
+        '1': "[dominican-3-termination] j ji hi h g gh.",
+        '2': "[dominican-3-termination-2] j h j ih."
+      } },
     '4. Dominican': { clef: 'c4', rules: 'dominican-4',
       mediant: "[dominican-4] h gh hr g h i h.",
       termination: "[dominican-4-termination] g h ih gf e." },
@@ -374,6 +377,12 @@ var d_tones = {'1.':{clef:"c4",
     '6. Dominican': { clef: 'c4', rules: 'dominican-6',
       mediant: "[dominican-1] f gh hr 'ixi hr 'g hr h.",
       termination: "[dominican-6-termination] f gh g f." },
+    '7. Dominican': { clef: 'c3', rules: 'dominican-7',
+      mediant: "[dominican-7] h hi ir k jr i jr j.",
+      terminations: {
+        '1': "[dominican-7-termination] i h gf.",
+        '2': "[dominican-7-termination-2] i h gi."
+      } },
     '8. Dominican': { clef: 'c4', rules: 'dominican-8',
       mediant: "[dominican-8] g h jr 'k jr j.",
       terminations: {
@@ -715,10 +724,13 @@ function combineToneGabc(tones) {
   });
 }
             
-// Monosyllables the Tone I examples leave unaccented unless a stated rule
-// gives them the accent. This is a working subset, not the missing list on
-// pp. 339–341 of the source. See DOMINICAN-TONE-1.md.
-var OP1_ATONIC = { a:1, ab:1, ad:1, atque:1, aut:1, cum:1, de:1, e:1, et:1, in:1, inter:1, ob:1, per:1, prae:1, pro:1, sine:1, sub:1 };
+// One-syllable words left unaccented unless a tone rule gives them one.
+// Pp. 338–341: truly copulative et, ac, atque are grave; disjunctive aut,
+// vel and the negatives non, nec, neque, sed are acute. Prepositions are
+// grave only before their case, and acute when postposed or absolute.
+// There is no case parser, so only these monosyllables are unaccented.
+// A written acute still wins. See DOMINICAN-TONE-1.md.
+var OP1_ATONIC = { a:1, ab:1, ac:1, ad:1, atque:1, cum:1, de:1, e:1, et:1, in:1, inter:1, ob:1, per:1, prae:1, pro:1, sine:1, sub:1 };
 
 function op1Fold(s) {
   return String(s || '').toLowerCase()
@@ -1053,6 +1065,112 @@ function opT3First(notes, words, roles) {
   opPaintEnd(notes, extended ? [open, 'hi', 'h', 'g', 'gh'] : ['ji', 'hi', 'h', 'gh'], roles, 2);
   return notes.length - (extended ? 5 : 4);
 }
+// Last accent for a termination whose own text (Tone III) or an explicit
+// analogy (Tone VII) moves it off a final monosyllable, and drops the accent
+// of a monosyllable before a 2- or 3-syllable word accented on its first.
+function opTerminationLast(words) {
+  var last = words[words.length - 1];
+  var prev = words[words.length - 2];
+  if (!last) return null;
+  if (last.syls.length === 1 && prev) return op1AccentSyl(prev) || op1ForceAccent(prev);
+  var lastAcc = op1AccentSyl(last);
+  var onFirst = lastAcc && last.syls.indexOf(lastAcc) === 0 && last.syls.length >= 2 && last.syls.length <= 3;
+  if (onFirst && prev && prev.syls.length === 1) prev.syls[0].accent = false;
+  return op1AccentSyl(last);
+}
+function opMarkedBefore(syls, lastI) {
+  for (var i = lastI - 1; i >= 0; i--) if (syls[i].accent) return i;
+  return -1;
+}
+// Tone III, second termination. La alone when one syllable stands between
+// the penultimate accent and the last; otherwise si la on the two syllables
+// before the last accent. The last accent and what follows it, except the
+// final syllable, are ut. The final syllable is si-la.
+function opT3Second(notes, syls, words, roles) {
+  var lastSyl = opTerminationLast(words);
+  var lastI = lastSyl ? syls.indexOf(lastSyl) : Math.max(0, syls.length - 2);
+  var pen = opMarkedBefore(syls, lastI);
+  if (pen < 0) pen = Math.max(0, lastI - 2);
+  var between = lastI - pen - 1;
+  if (between >= 2 && lastI >= 2) {
+    notes[lastI - 2] = 'i';
+    notes[lastI - 1] = 'h';
+    if (roles) { roles[lastI - 2] = 'italic'; roles[lastI - 1] = 'italic'; }
+  } else if (between === 1 && lastI >= 1) {
+    notes[lastI - 1] = 'h';
+    if (roles) roles[lastI - 1] = 'italic';
+  }
+  for (var k = lastI; k < notes.length - 1; k++) notes[k] = 'j';
+  if (notes.length) notes[notes.length - 1] = 'ih';
+  if (roles && lastI >= 0 && lastI < notes.length) roles[lastI] = 'bold';
+  return pen < lastI ? pen : lastI;
+}
+// Tone VII mediant: Tone I's accent places, with fa mi re mi where Tone I
+// reads si la sol la. The mi between the two accents is not the tenor.
+function opT7Mediant(notes, syls, words, roles) {
+  if (syls.length < 2) return syls.length;
+  var last = words[words.length - 1];
+  var solSyl = syls[syls.length - 2];
+  var lastAcc = op1AccentSyl(last);
+  if (lastAcc && last.syls.length >= 3 && last.syls.indexOf(lastAcc) === last.syls.length - 3) solSyl = lastAcc;
+  var solI = syls.indexOf(solSyl);
+  var si = op1PsalmSi(words, syls);
+  var siI = si ? syls.indexOf(si) : -1;
+  if (siI >= solI) siI = -1;
+  var cadenceAt = siI >= 0 ? siI : solI;
+  if (siI >= 0) {
+    notes[siI] = 'k';
+    if (roles) roles[siI] = 'bold';
+    for (var b = siI + 1; b < solI; b++) notes[b] = 'j';
+  }
+  for (var s = solI; s < syls.length - 1; s++) notes[s] = 'i';
+  notes[syls.length - 1] = 'j';
+  if (roles && solI >= 0) roles[solI] = 'bold';
+  return cadenceAt;
+}
+function opWordOf(words, syl) {
+  for (var w = 0; w < words.length; w++) {
+    if (words[w].syls.indexOf(syl) >= 0) return words[w];
+  }
+  return null;
+}
+// Tone VII terminations. The nine word-shapes in the book share one body;
+// the two endings differ only in the last neume (gf or gi). When the last
+// accent is itself a monosyllable, an earlier monosyllable is not the
+// penultimate accent (Habitátio est in te: the peak stays on tá).
+function opT7Termination(notes, syls, words, roles, finalNote) {
+  var lastSyl = opTerminationLast(words);
+  var lastI = lastSyl ? syls.indexOf(lastSyl) : Math.max(0, syls.length - 2);
+  var n = notes.length - lastI;
+  var lastWord = opWordOf(words, syls[lastI]);
+  var skipMono = lastWord && lastWord.syls.length === 1;
+  var pen = -1;
+  for (var i = lastI - 1; i >= 0; i--) {
+    if (!syls[i].accent) continue;
+    var owner = opWordOf(words, syls[i]);
+    if (skipMono && owner && owner.syls.length === 1) continue;
+    pen = i;
+    break;
+  }
+  if (pen < 0) pen = Math.max(0, n >= 4 ? lastI - 1 : lastI - 2);
+  if (pen < lastI) {
+    notes[pen] = 'j';
+    if (roles) roles[pen] = 'italic';
+    for (var b = pen + 1; b < lastI; b++) {
+      notes[b] = 'i';
+      if (roles) roles[b] = 'italic';
+    }
+  }
+  if (notes.length) notes[notes.length - 1] = finalNote;
+  if (n <= 3) {
+    for (var h = lastI; h < notes.length - 1; h++) notes[h] = 'h';
+  } else {
+    notes[lastI] = 'i';
+    for (var a = lastI + 1; a < notes.length - 1; a++) notes[a] = 'h';
+  }
+  if (roles && lastI >= 0 && lastI < notes.length) roles[lastI] = 'bold';
+  return pen < lastI ? pen : lastI;
+}
 function applyDominicanLater(options, rules) {
   var clef = options.clef || (typeof _clef === 'string' ? _clef : 'c4');
   var parsed = op1ReadNotes(options.gabc, clef);
@@ -1075,7 +1193,10 @@ function applyDominicanLater(options, rules) {
     'dominican-4-alt-termination': 'i',
     'dominican-8-termination': 'j',
     'dominican-8-termination-c': 'j',
-    'dominican-3-termination': 'j'
+    'dominican-3-termination': 'j',
+    'dominican-3-termination-2': 'j',
+    'dominican-7-termination': 'i',
+    'dominican-7-termination-2': 'i'
   };
   var tenor = (neum && neum.tenor) || tenorByRule[rules] || (parsed.toneTenor || 'h');
   if (rules.indexOf('termination') < 0 && !short && parsed.dominicanNotes && parsed.dominicanNotes.length >= 3) tenor = opBare(parsed.dominicanNotes[2]);
@@ -1113,6 +1234,10 @@ function applyDominicanLater(options, rules) {
     opPaintEnd(notes, n === 6 ? ['h', 'j', 'k', 'j', 'j', 'j'] : n === 5 ? ['h', 'j', 'k', 'j', 'j'] : ['h', 'j', 'k', 'j'], roles, 2);
     cadenceAt = notes.length - n;
   } else if (rules === 'dominican-3-termination') cadenceAt = opT3First(notes, words, roles);
+  else if (rules === 'dominican-3-termination-2') cadenceAt = opT3Second(notes, syls, words, roles);
+  else if (rules === 'dominican-7') cadenceAt = opT7Mediant(notes, syls, words, roles);
+  else if (rules === 'dominican-7-termination') cadenceAt = opT7Termination(notes, syls, words, roles, 'gf');
+  else if (rules === 'dominican-7-termination-2') cadenceAt = opT7Termination(notes, syls, words, roles, 'gi');
   if (options.collectRoles) options.collectRoles.roles = roles;
   if (cadenceAt < 0) cadenceAt = 0;
   var flexNote = parsed.toneFlex || tenor;
@@ -1129,6 +1254,7 @@ function applyDominicanLater(options, rules) {
   var init = neum ? neum.init : null;
   if (!init && rules === 'dominican-4') init = ['h', 'gh'];
   if (!init && rules === 'dominican-4-alt') init = ['i', 'hi'];
+  if (!init && rules === 'dominican-7') init = ['h', 'hi'];
   if (includeIntonation && init && rules.indexOf('termination') < 0 && cadenceAt >= 2) {
     if (notes[0] === tenor) notes[0] = init[0];
     if (syls.length > 1 && notes[1] === tenor) notes[1] = init[1];

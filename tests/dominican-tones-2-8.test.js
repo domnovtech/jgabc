@@ -149,7 +149,7 @@ describe('Tone III mediant follows Tone I; first termination is its own', functi
     expect(pitches(chant('Patri et Fílio', t.mediant))).toBe('Pa=k tri=j et=j Fí=i li=i o=j');
   });
   test('first termination', function() {
-    var g = t.termination;
+    var g = t.terminations['1'];
     expect(pitches(chant('E u o u a e', g))).toBe('E=j u=j o=ji u=hi a=h e=gh');
     expect(pitches(chant('ánima mea Dóminum', g))).toBe('á=j ni=j ma=j me=ji a=hi Dó=h mi=g num=gh');
     expect(pitches(chant('In lege Dómini', g))).toBe('In=j le=ji ge=hi Dó=h mi=g ni=gh');
@@ -158,10 +158,95 @@ describe('Tone III mediant follows Tone I; first termination is its own', functi
   });
 });
 
+describe('Tone III second termination', function() {
+  var g = tone('3. Dominican').terminations['2'];
+  test('la before the last accent, then ut, final si-la', function() {
+    expect(pitches(chant('E u ó u a e', g))).toBe('E=j u=j ó=j u=h a=j e=ih');
+    expect(pitches(chant('Dextris meis', g))).toBe('Dex=j tris=h me=j is=ih');
+    expect(pitches(chant('Lege Dómini', g))).toBe('Le=j ge=h Dó=j mi=j ni=ih');
+    expect(pitches(chant('In excélsis', g))).toBe('In=j ex=h cél=j sis=ih');
+    expect(pitches(chant('In lætítia', g))).toBe('In=j læ=h tí=j ti=j a=ih');
+    expect(pitches(chant('In Jerúsalem', g))).toBe('In=j Je=h rú=j sa=j lem=ih');
+    expect(pitches(chant('Esuriéntibus', g))).toBe('E=j su=j ri=h én=j ti=j bus=ih');
+    expect(pitches(chant('Populórum', g))).toBe('Po=j pu=h ló=j rum=ih');
+    expect(pitches(chant('Deo Jácob', g))).toBe('De=j o=h Já=j cob=ih');
+    expect(pitches(chant('In quibus non est salus', g))).toBe('In=j qui=j bus=j non=j est=h sa=j lus=ih');
+    expect(pitches(chant('Consolátus es me', g))).toBe('Con=j so=j lá=j tus=h es=j me=ih');
+    expect(pitches(chant('Convertúntur ad cor', g))).toBe('Con=j ver=j tún=j tur=h ad=j cor=ih');
+  });
+  test('si la when two syllables stand before the last accent', function() {
+    expect(pitches(chant('Pestiléntiæ non sedit', g))).toBe('Pes=j ti=j lén=j ti=j æ=i non=h se=j dit=ih');
+    expect(pitches(chant('Spirítui Sancto', g))).toBe('Spi=j rí=j tu=i i=h Sanc=j to=ih');
+    expect(pitches(chant('Tuis Jerúsalem', g))).toBe('Tu=j is=i Je=h rú=j sa=j lem=ih');
+    expect(pitches(chant('Ante lucíferum génui te', g))).toBe('An=j te=j lu=j cí=j fe=i rum=h gé=j nu=j i=j te=ih');
+    expect(pitches(chant('Tuum vivífica me', g))).toBe('Tu=j um=i vi=h ví=j fi=j ca=j me=ih');
+    expect(pitches(chant('Mirabílibus super me', g))).toBe('Mi=j ra=j bí=j li=i bus=h su=j per=j me=ih');
+  });
+});
+
+describe('Tone VII', function() {
+  var t = tone('7. Dominican');
+  test('intonation, flex, and the Tone I mediant on fa mi re mi', function() {
+    var init = chant('Séptimus tonus sic íncipit', t.mediant, 'c3', { includeIntonation: true, verseNumber: 1 });
+    expect(pitches(init).indexOf('Sép=h ti=hi')).toBe(0);
+    expect(pitches(chant('Impiórum † et non stetit', t.mediant, 'c3'))).toContain('ó=i rum=h');
+    expect(pitches(chant('In lege Dómini volúntas ejus', t.mediant, 'c3'))).toBe('In=i le=i ge=i Dó=i mi=i ni=i vo=i lún=k tas=j e=i jus=j');
+    expect(pitches(chant('Audívit Dóminus et dístulit', t.mediant, 'c3'))).toBe('Au=i dí=i vit=i Dó=k mi=j nus=j et=j dís=i tu=i lit=j');
+    expect(pitches(chant('Non stetit', t.mediant, 'c3'))).toBe('Non=k ste=i tit=j');
+    expect(pitches(chant('Indútus est', t.mediant, 'c3'))).toBe('Ind=i ú=k tus=i est=j');
+    expect(pitches(chant('Bonus es tu', t.mediant, 'c3'))).toBe('Bo=k nus=j es=i tu=j');
+    expect(pitches(chant('In me est', t.mediant, 'c3'))).toBe('In=k me=i est=j');
+    expect(pitches(chant('misericórdia', t.mediant, 'c3'))).toBe('mi=i se=k ri=j cór=i di=i a=j');
+    expect(pitches(chant('Jerúsalém', t.mediant, 'c3'))).toBe('Je=i rú=k sa=i lém=j');
+    expect(pitches(chant('Jerúsalem', t.mediant, 'c3'))).toBe('Je=i rú=i sa=i lem=j');
+    expect(pitches(chant('Súper eum', t.mediant, 'c3'))).toBe('Sú=k per=j e=i um=j');
+    expect(pitches(chant('cum princípibus', t.mediant, 'c3'))).toBe('cum=k prin=j cí=i pi=i bus=j');
+  });
+  test('first termination, the nine word shapes', function() {
+    var g = t.terminations['1'];
+    expect(pitches(chant('Cómmovébitur', g, 'c3'))).toBe('Cóm=j mo=i vé=h bi=h tur=gf');
+    expect(pitches(chant('Pópulórum', g, 'c3'))).toBe('Pó=j pu=i ló=h rum=gf');
+    expect(pitches(chant('Benédicétur', g, 'c3'))).toBe('Be=i né=j di=i cé=h tur=gf');
+    expect(pitches(chant('In lætítia', g, 'c3'))).toBe('In=j læ=i tí=h ti=h a=gf');
+    expect(pitches(chant('Moysi et Aaron', g, 'c3'))).toBe('Mo=i y=i si=j et=i A=h a=h ron=gf');
+    expect(pitches(chant('Salvum me fácias', g, 'c3'))).toBe('Sal=j vum=i me=i fá=h ci=h as=gf');
+    expect(pitches(chant('In excélsis', g, 'c3'))).toBe('In=j ex=i cél=h sis=gf');
+    expect(pitches(chant('Pédum tuórum', g, 'c3'))).toBe('Pé=j dum=i tu=i ó=h rum=gf');
+    expect(pitches(chant('Dextris meis', g, 'c3'))).toBe('Dex=j tris=i me=h is=gf');
+    expect(pitches(chant('Super eum', g, 'c3'))).toBe('Su=j per=i e=h um=gf');
+    expect(pitches(chant('Pestiléntiæ non sedit', g, 'c3'))).toBe('Pes=i ti=i lén=j ti=i æ=i non=i se=h dit=gf');
+    expect(pitches(chant('Vúlpium erunt', g, 'c3'))).toBe('Vúl=j pi=i um=i e=h runt=gf');
+    expect(pitches(chant('Non est salus', g, 'c3'))).toBe('Non=j est=i sa=h lus=gf');
+    expect(pitches(chant('Jacób et Joseph', g, 'c3'))).toBe('Ja=i cób=j et=i Jo=h seph=gf');
+    expect(pitches(chant('Diligéntibus te', g, 'c3'))).toBe('Di=i li=j gén=i ti=h bus=h te=gf');
+    expect(pitches(chant('Et enútries me', g, 'c3'))).toBe('Et=i e=j nú=i tri=h es=h me=gf');
+    expect(pitches(chant('Vivífica me', g, 'c3'))).toBe('Vi=j ví=i fi=h ca=h me=gf');
+    expect(pitches(chant('Ante lucíferum génui te', g, 'c3'))).toBe('An=i te=i lu=i cí=j fe=i rum=i gé=i nu=h i=h te=gf');
+    expect(pitches(chant('Tua líbera me', g, 'c3'))).toBe('Tu=j a=i lí=i be=h ra=h me=gf');
+    expect(pitches(chant('Ut éruas me', g, 'c3'))).toBe('Ut=j é=i ru=h as=h me=gf');
+    expect(pitches(chant('Et præcínxit se', g, 'c3'))).toBe('Et=j præ=i cín=h xit=h se=gf');
+    expect(pitches(chant('Quæ in eis sunt', g, 'c3'))).toBe('Quæ=j in=i e=h is=h sunt=gf');
+    expect(pitches(chant('In mirabílibus super me', g, 'c3'))).toBe('In=i mi=i ra=i bí=j li=i bus=i su=h per=h me=gf');
+    expect(pitches(chant('Qui convertúntur ad cor', g, 'c3'))).toBe('Qui=i con=i ver=i tún=j tur=i ad=h cor=gf');
+    expect(pitches(chant('Consolátus es me', g, 'c3'))).toBe('Con=i so=i lá=j tus=i es=h me=gf');
+    expect(pitches(chant('Habitátio est in te', g, 'c3'))).toBe('Ha=i bi=i tá=j ti=i o=i est=i in=h te=gf');
+  });
+  test('second termination changes only the final neume', function() {
+    var g = t.terminations['2'];
+    expect(pitches(chant('Pópulórum', g, 'c3'))).toBe('Pó=j pu=i ló=h rum=gi');
+    expect(pitches(chant('Diligéntibus te', g, 'c3'))).toBe('Di=i li=j gén=i ti=h bus=h te=gi');
+    expect(pitches(chant('Et præcínxit se', g, 'c3'))).toBe('Et=j præ=i cín=h xit=h se=gi');
+  });
+  test('aut is acute and ac is grave', function() {
+    expect(pitches(chant('aut stetit', t.mediant, 'c3'))).toBe('aut=k ste=i tit=j');
+    expect(pitches(chant('ac stetit', t.mediant, 'c3'))).toBe('ac=i ste=i tit=j');
+  });
+});
+
 describe('Roman tone 2 is untouched', function() {
   test('formula and output', function() {
     expect(context.g_tones['2.'].mediant).toBe("e f hr 'i hr h.");
-    expect(context.g_tones['7. Dominican']).toBeUndefined();
+    expect(context.g_tones['7. Dominican'].clef).toBe('c3');
     var out = chant('non stetit', context.g_tones['2.'].mediant, 'f3', { favor: 'intonation', includeIntonation: undefined });
     expect(out).toContain('(e)');
   });

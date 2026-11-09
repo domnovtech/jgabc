@@ -55,18 +55,26 @@ describe('HTML cadence emphasis', function() {
     expect(tags(htmlFor(g['4. Dominican'].mediant, 'peccatórum non stetit'))).toBe('peccató<i>rum</i> <i>non</i> <b>ste</b>tit');
     expect(tags(htmlFor(g['4. Dominican alt'].mediant, 'peccatórum non stetit', 'c3'))).toBe('peccató<i>rum</i> <i>non</i> <b>ste</b>tit');
   });
+  test('Tone III ending 2 and Tone VII mark the cadence accent', function() {
+    expect(tags(htmlFor(g['3. Dominican'].terminations['2'], 'Lege Dómini'))).toBe('Le<i>ge</i> <b>Dó</b>mini');
+    expect(tags(htmlFor(g['3. Dominican'].terminations['2'], 'Pestiléntiæ non sedit'))).toBe('Pestilénti<i>æ</i> <i>non</i> <b>se</b>dit');
+    expect(tags(htmlFor(g['7. Dominican'].terminations['1'], 'Pópulórum', 'c3'))).toBe('<i>Pó</i><i>pu</i><b>ló</b>rum');
+    expect(tags(htmlFor(g['7. Dominican'].terminations['1'], 'dele iniquitátem meam', 'c3'))).not.toContain('<b>de</b>');
+    expect(tags(htmlFor(g['7. Dominican'].mediant, 'Non stetit', 'c3'))).toBe('<b>Non</b> <b>ste</b>tit');
+    expect(boldText(htmlFor(g['7. Dominican'].terminations['2'], 'Diligéntibus te', 'c3'))).toEqual(['gén']);
+  });
   test('bold syllables are inside the GABC cadence, not the reciting tone', function() {
     const cases = [
       ['2. Dominican', 'termination', 'f3', 'dele iniquitátem meam'],
       ['5. Dominican', 'termination', 'c3', 'dele iniquitátem meam'],
       ['6. Dominican', 'termination', 'c4', 'dele iniquitátem meam'],
       ['8. Dominican', 'terminations.G', 'c4', 'dele iniquitátem meam'],
-      ['3. Dominican', 'termination', 'c4', 'dele iniquitátem meam'],
+      ['3. Dominican', 'terminations.1', 'c4', 'dele iniquitátem meam'],
       ['4. Dominican', 'termination', 'c4', 'dele iniquitátem meam']
     ];
     cases.forEach(function(row) {
       var tone = g[row[0]];
-      var formula = row[1].indexOf('.') > 0 ? tone.terminations.G : tone[row[1]];
+      var formula = row[1] === 'terminations.G' ? tone.terminations.G : row[1] === 'terminations.1' ? tone.terminations['1'] : tone[row[1]];
       var html = htmlFor(formula, row[3], row[2]);
       var gabc = context.applyPsalmTone({ text: row[3], gabc: formula, clef: row[2], useBoldItalic: false, format: 'gabc-plain', prefix: false, suffix: false, includeIntonation: false, verseNumber: 2 });
       boldText(html).forEach(function(word) {

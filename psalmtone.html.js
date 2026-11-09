@@ -143,8 +143,14 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
             flex = true;
           }
         }
-        var tempString=addBoldItalic(line[0], medTones.accents, medTones.preparatory, medTones.afterLastAccent, useFormat, onlyVowels, useNovaVulgata?"":i+1,true,false,i)
-            + (line.length == 1? "" : ((((useFormat in bi_formats)&&bi_formats[useFormat])||bi_formats.gabc).nbsp) + "* " + addBoldItalic(line[1], terTones.accents, terTones.preparatory, terTones.afterLastAccent, useFormat, onlyVowels,useNovaVulgata?"":i+1,false,true,i));
+        var emphasis = function(half, tones, prefixFlag, suffixFlag) {
+          if (tones && !tones.accents && tones.rules && tones.rules.indexOf('dominican-') === 0 && tones.rules.indexOf('dominican-1') !== 0) {
+            return dominicanEmphasisHtml(half, tones, clef, useFormat, onlyVowels, useNovaVulgata?"":i+1, prefixFlag, suffixFlag, i);
+          }
+          return addBoldItalic(half, tones.accents, tones.preparatory, tones.afterLastAccent, useFormat, onlyVowels, useNovaVulgata?"":i+1, prefixFlag, suffixFlag, i);
+        };
+        var tempString=emphasis(line[0], medTones, true, false)
+            + (line.length == 1? "" : ((((useFormat in bi_formats)&&bi_formats[useFormat])||bi_formats.gabc).nbsp) + "* " + emphasis(line[1], terTones, false, true));
         vr += tempString + '\n';
         r += "<p style='line-height:100%;margin: 6pt 0px;'>"
           + tempString

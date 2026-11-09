@@ -19,7 +19,7 @@ Pending: Tone III’s second termination; all of Tone VII (its mediant is the To
 
 ## Hand-editing
 
-The bracket tag selects the rule (`[dominican-2]`, `[dominican-6-termination]`, …). For a Tone I-shaped mediant (`1`, `3`, `6`) the notes after the tag are the neumes. Other rules read their pitches from `applyDominicanLater` in `psalmtone.js`; keep the tag, or the ordinary engine is used. Delete a tag to force that.
+The bracket tag selects the rule (`[dominican-2]`, `[dominican-6-termination]`, …). For a Tone I-shaped mediant (`1`, `3`, `6`) the notes after the tag are the neumes, and HTML bold/italic uses that formula’s accent count, the same as a Roman tone. Other Dominican lines have no accent marks in the formula; HTML bold and italic are taken from the syllables the rule actually paints (bold on the cadence accent, italic on the approach). Delete a tag to force the ordinary engine.
 
 ## Limitations
 

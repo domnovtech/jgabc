@@ -918,9 +918,12 @@ function opFromEnd(word) {
   if (!acc) return -1;
   return word.syls.length - 1 - word.syls.indexOf(acc);
 }
-function opPaintEnd(notes, pattern) {
+function opPaintEnd(notes, pattern, roles, boldAt) {
   var start = notes.length - pattern.length;
-  for (var i = 0; i < pattern.length; i++) if (start + i >= 0) notes[start + i] = pattern[i];
+  for (var i = 0; i < pattern.length; i++) if (start + i >= 0) {
+    notes[start + i] = pattern[i];
+    if (roles) roles[start + i] = i < boldAt ? 'italic' : i === boldAt ? 'bold' : 'plain';
+  }
 }
 function opExtendedCadence(words) {
   var last = words[words.length - 1];
@@ -958,14 +961,18 @@ function opT2UtDoubled(words) {
   }
   return false;
 }
-function opT2Termination(notes, syls, words) {
+function opT2Termination(notes, syls, words, roles) {
   var utN = opT2UtDoubled(words) ? 2 : 1;
   var len = syls.length;
   notes[len - 1] = 'f';
-  for (var u = 0; u < utN && len - 2 - u >= 0; u++) notes[len - 2 - u] = 'e';
+  for (var u = 0; u < utN && len - 2 - u >= 0; u++) {
+    notes[len - 2 - u] = 'e';
+    if (roles) roles[len - 2 - u] = u === utN - 1 ? 'bold' : 'plain';
+  }
   var mi = len - 2 - utN;
   if (mi < 0) return mi;
   notes[mi] = 'g';
+  if (roles) roles[mi] = 'italic';
   var word = null, wi = -1;
   for (var i = 0; i < words.length; i++) {
     if (words[i].syls.indexOf(syls[mi]) >= 0) { word = words[i]; wi = i; break; }
@@ -974,11 +981,14 @@ function opT2Termination(notes, syls, words) {
   var utStart = len - 1 - utN;
   if (word && word.syls.length >= 3 && opFromEnd(word) === 2 && next && mi > 0 && word.syls.indexOf(syls[mi - 1]) >= 0) {
     var nextI = syls.indexOf(next.syls[0]);
-    if (nextI >= utStart && nextI < len - 1) notes[mi - 1] = 'g';
+    if (nextI >= utStart && nextI < len - 1) {
+      notes[mi - 1] = 'g';
+      if (roles) roles[mi - 1] = 'italic';
+    }
   }
   return mi > 0 && notes[mi - 1] === 'g' ? mi - 1 : mi;
 }
-function opT4Mediant(notes, syls, words, p) {
+function opT4Mediant(notes, syls, words, p, roles) {
   var acc = null;
   for (var i = syls.length - 1; i >= 0; i--) if (syls[i].accent) { acc = i; break; }
   if (acc == null) acc = Math.max(0, syls.length - 2);
@@ -987,6 +997,7 @@ function opT4Mediant(notes, syls, words, p) {
   if (acc > 0) notes[acc - 1] = p.la;
   if (acc > 1) notes[acc - 2] = p.sol;
   if (acc < syls.length - 1) notes[acc] = p.si;
+  if (roles && acc >= 0 && acc < notes.length) roles[acc] = 'bold';
   if (acc > 2) {
     var syl = syls[acc - 3];
     for (var w = 0; w < words.length; w++) {
@@ -995,9 +1006,11 @@ function opT4Mediant(notes, syls, words, p) {
       if (words[w].syls.length >= 3 && opFromEnd(words[w]) === 2 && ix === words[w].syls.length - 2) notes[acc - 3] = p.sol;
     }
   }
-  return Math.max(0, acc - (notes[acc - 3] === p.sol ? 3 : 2));
+  var from = notes[acc - 3] === p.sol ? acc - 3 : Math.max(0, acc - 2);
+  if (roles) for (var r = from; r < acc; r++) if (r >= 0) roles[r] = 'italic';
+  return Math.max(0, from);
 }
-function opT5Termination(notes, syls, words) {
+function opT5Termination(notes, syls, words, roles) {
   var lastW = words[words.length - 1];
   var prev = words[words.length - 2];
   var lastAcc = op1AccentSyl(lastW);
@@ -1019,13 +1032,17 @@ function opT5Termination(notes, syls, words) {
   var li = syls.indexOf(lastAcc);
   var pi = pen ? syls.indexOf(pen) : li;
   notes[li] = 'h';
-  if (pi >= 0 && pi !== li) notes[pi] = 'i';
+  if (roles) roles[li] = 'bold';
+  if (pi >= 0 && pi !== li) {
+    notes[pi] = 'i';
+    if (roles) roles[pi] = 'bold';
+  }
   if (li - 1 > pi) notes[li - 1] = 'g';
   for (var g = pi + 1; g < li - 1; g++) notes[g] = 'h';
   for (var a = li + 1; a < syls.length; a++) notes[a] = 'f';
   return pi >= 0 ? pi : li;
 }
-function opT3First(notes, words) {
+function opT3First(notes, words, roles) {
   var last = words[words.length - 1];
   var prev = words[words.length - 2];
   var third = words[words.length - 3];
@@ -1033,7 +1050,7 @@ function opT3First(notes, words) {
   var open = 'ji';
   if (extended && prev && last.syls.length === 3 && opFromEnd(last) === 2 && opFromEnd(prev) === 2) open = 'i';
   if (extended && last.syls.length === 1 && prev && prev.syls.length === 2 && third && third.syls.length >= 3 && opFromEnd(third) === 2) open = 'i';
-  opPaintEnd(notes, extended ? [open, 'hi', 'h', 'g', 'gh'] : ['ji', 'hi', 'h', 'gh']);
+  opPaintEnd(notes, extended ? [open, 'hi', 'h', 'g', 'gh'] : ['ji', 'hi', 'h', 'gh'], roles, 2);
   return notes.length - (extended ? 5 : 4);
 }
 function applyDominicanLater(options, rules) {
@@ -1064,35 +1081,39 @@ function applyDominicanLater(options, rules) {
   if (rules.indexOf('termination') < 0 && !short && parsed.dominicanNotes && parsed.dominicanNotes.length >= 3) tenor = opBare(parsed.dominicanNotes[2]);
   if (rules.indexOf('dominican-4') === 0 && rules.indexOf('termination') < 0) tenor = rules.indexOf('alt') >= 0 ? 'i' : 'h';
   var notes = syls.map(function() { return tenor; });
+  var roles = syls.map(function() { return 'plain'; });
   var cadenceAt = syls.length;
-  if (short) cadenceAt = opApplyShortMediant(notes, syls, neum);
-  else if (rules === 'dominican-2-termination') cadenceAt = opT2Termination(notes, syls, words);
-  else if (rules === 'dominican-4') cadenceAt = opT4Mediant(notes, syls, words, { sol: 'g', la: 'h', si: 'i', after: 'h' });
-  else if (rules === 'dominican-4-alt') cadenceAt = opT4Mediant(notes, syls, words, { sol: 'h', la: 'i', si: 'j', after: 'i' });
+  if (short) {
+    cadenceAt = opApplyShortMediant(notes, syls, neum);
+    if (cadenceAt >= 0 && cadenceAt < roles.length) roles[cadenceAt] = 'bold';
+  } else if (rules === 'dominican-2-termination') cadenceAt = opT2Termination(notes, syls, words, roles);
+  else if (rules === 'dominican-4') cadenceAt = opT4Mediant(notes, syls, words, { sol: 'g', la: 'h', si: 'i', after: 'h' }, roles);
+  else if (rules === 'dominican-4-alt') cadenceAt = opT4Mediant(notes, syls, words, { sol: 'h', la: 'i', si: 'j', after: 'i' }, roles);
   else if (rules === 'dominican-4-termination') {
     var ext = opExtendedCadence(words);
-    opPaintEnd(notes, ext ? ['g', 'h', 'ih', 'g', 'f', 'e'] : ['g', 'h', 'ih', 'gf', 'e']);
+    opPaintEnd(notes, ext ? ['g', 'h', 'ih', 'g', 'f', 'e'] : ['g', 'h', 'ih', 'gf', 'e'], roles, 3);
     cadenceAt = notes.length - (ext ? 6 : 5);
   } else if (rules === 'dominican-4-alt-termination') {
     var extA = opExtendedCadence(words);
-    opPaintEnd(notes, extA ? ['h', 'i', 'j', 'h', 'f', 'f'] : ['h', 'i', 'j', 'h', 'f']);
+    opPaintEnd(notes, extA ? ['h', 'i', 'j', 'h', 'f', 'f'] : ['h', 'i', 'j', 'h', 'f'], roles, 3);
     cadenceAt = notes.length - (extA ? 6 : 5);
-  } else if (rules === 'dominican-5-termination') cadenceAt = opT5Termination(notes, syls, words);
+  } else if (rules === 'dominican-5-termination') cadenceAt = opT5Termination(notes, syls, words, roles);
   else if (rules === 'dominican-6-termination') {
     var ext6 = opExtendedCadence(words);
-    opPaintEnd(notes, ext6 ? ['f', 'gh', 'g', 'f', 'f'] : ['f', 'gh', 'g', 'f']);
+    opPaintEnd(notes, ext6 ? ['f', 'gh', 'g', 'f', 'f'] : ['f', 'gh', 'g', 'f'], roles, 1);
     cadenceAt = notes.length - (ext6 ? 5 : 4);
   } else if (rules === 'dominican-8-termination') {
     var ext8 = opExtendedCadence(words);
-    opPaintEnd(notes, ext8 ? ['i', 'j', 'h', 'g', 'g'] : ['i', 'j', 'h', 'g']);
+    opPaintEnd(notes, ext8 ? ['i', 'j', 'h', 'g', 'g'] : ['i', 'j', 'h', 'g'], roles, 1);
     cadenceAt = notes.length - (ext8 ? 5 : 4);
   } else if (rules === 'dominican-8-termination-c') {
     var last = words[words.length - 1], prev = words[words.length - 2], n = 4;
     if (last && last.syls.length === 1 && prev && prev.syls.length >= 3 && opFromEnd(prev) === 2) n = 6;
     else if (opExtendedCadence(words) || (last && last.syls.length === 1 && prev && prev.syls.length >= 2 && opFromEnd(prev) === 1)) n = 5;
-    opPaintEnd(notes, n === 6 ? ['h', 'j', 'k', 'j', 'j', 'j'] : n === 5 ? ['h', 'j', 'k', 'j', 'j'] : ['h', 'j', 'k', 'j']);
+    opPaintEnd(notes, n === 6 ? ['h', 'j', 'k', 'j', 'j', 'j'] : n === 5 ? ['h', 'j', 'k', 'j', 'j'] : ['h', 'j', 'k', 'j'], roles, 2);
     cadenceAt = notes.length - n;
-  } else if (rules === 'dominican-3-termination') cadenceAt = opT3First(notes, words);
+  } else if (rules === 'dominican-3-termination') cadenceAt = opT3First(notes, words, roles);
+  if (options.collectRoles) options.collectRoles.roles = roles;
   if (cadenceAt < 0) cadenceAt = 0;
   var flexNote = parsed.toneFlex || tenor;
   for (var f = 0; f < syls.length; f++) {
@@ -1723,6 +1744,51 @@ function getWords(syls) {
   return r;
 }
 
+function dominicanEmphasisHtml(text, gabc, clef, format, onlyVowel, verseNumber, prefixFlag, suffixFlag, verseIndex) {
+  var bucket = {};
+  applyPsalmTone({
+    text: text, gabc: gabc, clef: clef, useOpenNotes: false, useBoldItalic: false,
+    format: 'gabc-plain', prefix: false, suffix: false, includeIntonation: false,
+    verseNumber: verseNumber, firstPrefix: true, collectRoles: bucket
+  });
+  var roles = bucket.roles || [];
+  var f = bi_formats[format] || bi_formats.html;
+  var biFlex = f.flex || ['','','',''];
+  var verseNum = regexVerseNumber.exec(text);
+  var body = text;
+  if (verseNum) {
+    if (prefixFlag) body = body.slice(verseNum[0].length);
+    verseNum = parseInt(verseNum[1]);
+  } else verseNum = verseNumber || '';
+  var prefix = (prefixFlag && f.verse[0]) || '';
+  var suffix = (suffixFlag && f.verse[1]) || '';
+  var tmp = prefix.split(',');
+  verseIndex = (typeof verseIndex === 'number') ? verseIndex : ((verseNum || 1) - 1);
+  if (tmp.length > 1 && tmp.slice(-1)[0].length > 0) prefix = tmp[verseIndex % tmp.length];
+  tmp = suffix.split(',');
+  if (tmp.length > 1 && tmp.slice(-1)[0].length > 0) suffix = tmp[verseIndex % tmp.length];
+  var syl = getSyllables(body, f);
+  var result = '';
+  var vow;
+  for (var i = 0; i < syl.length; i++) {
+    var s = syl[i];
+    var role = roles[i] || 'plain';
+    var open = role === 'bold' ? f.bold[0] : role === 'italic' ? f.italic[0] : '';
+    var close = role === 'bold' ? f.bold[1] : role === 'italic' ? f.italic[1] : '';
+    if (!open) {
+      result += s.prepunctuation + s.syl + s.punctuation;
+    } else if (onlyVowel && (vow = regexVowel.exec(s.syl))) {
+      result += s.prepunctuation + s.syl.slice(0, vow.index) + open + vow[0] + close + s.syl.slice(vow.index + vow[0].length) + s.punctuation;
+    } else {
+      result += s.prepunctuation + processGabcPrespace(s.prespace) + open + s.sylnospace + close + s.punctuation;
+    }
+    if (s.flex && role === 'plain') result += (f.nbsp || ' ') + biFlex[2] + (typeof gabcFlex === 'string' ? gabcFlex : '†') + biFlex[3];
+  }
+  function fill(str) {
+    return (str || '').replace(/\(([^$]*)\$c([^)]*)\)/gi, String(verseNum ? ('$1' + verseNum + '$2') : '')).replace(/\$c/gi, String(verseNum));
+  }
+  return fill(prefix) + result + fill(suffix);
+}
 function addBoldItalic(text,accents,preparatory,sylsAfterBold,format,onlyVowel,verseNumber,prefix,suffix,verseIndex) {
   if(!sylsAfterBold) sylsAfterBold = 0;
   var f = bi_formats[format];

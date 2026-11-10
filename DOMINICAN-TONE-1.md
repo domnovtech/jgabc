@@ -11,7 +11,7 @@ Psalm tones only. No Magnificat or Benedictus formulas. Tones II–VIII below ar
 | `3. Dominican` | Mediant uses Tone I’s accent rules (the source says so) on re ut si ut. Ending `1` (`ji`/`i`, then hi h, optional g, gh). Ending `2`: la, or si la, before the last accent; ut after it; final si-la |
 | `4. Dominican` | Mediant (sol la before si; dactyl extends sol; no la after a final accent). First termination, 5 or 6 syllables |
 | `4. Dominican alt` | Same mediant and the second termination, a fourth higher, clef c3 |
-| `5. Dominican` | Short mediant; two-accent termination |
+| `5. Dominican` | Short mediant; two-accent termination. A monosyllable immediately before the last accent is not the penultimate accent |
 | `6. Dominican` | Intonation, flex, and mediant are Tone I’s (the source says so). Its own 4- or 5-syllable termination |
 | `7. Dominican` | Clef c3. Intonation ut-re, flex on ut. Mediant uses Tone I’s accent places (the source says so) on fa mi re mi. Endings `1` (final si-la) and `2` (final si-re); the nine word-shapes share one body |
 | `8. Dominican` | Short mediant; endings `G` (4 or 5 syllables) and `c` (4, 5, or 6) |

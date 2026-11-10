@@ -100,6 +100,9 @@ describe('Tone V', function() {
     expect(pitches(chant('In lætítia', g, 'c3'))).toBe('In=i læ=g tí=h ti=f a=f');
     expect(pitches(chant('In quibus non est salus', g, 'c3'))).toBe('In=h qui=h bus=h non=i est=g sa=h lus=f');
     expect(pitches(chant('Mirabília fecit', g, 'c3'))).toBe('Mi=h ra=h bí=i li=h a=g fe=h cit=f');
+    expect(pitches(chant('et morti non trádidit me', g, 'c3'))).toBe('et=h mor=i ti=h non=g trá=h di=f dit=f me=f');
+    expect(pitches(chant('Pestiléntiæ non sedit', g, 'c3'))).toBe('Pes=h ti=h lén=i ti=h æ=h non=g se=h dit=f');
+    expect(pitches(chant('Qui convertúntur ad cor', g, 'c3'))).toBe('Qui=h con=h ver=h tún=i tur=g ad=h cor=f');
   });
 });
 

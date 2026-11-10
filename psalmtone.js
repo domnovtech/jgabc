@@ -1142,7 +1142,23 @@ function opT5Termination(notes, syls, words, roles) {
   if (!pen && lastW.syls.length >= 4 && fromEnd === 1 && syls.length >= 4) pen = syls[syls.length - 4];
   if (!pen && lastW.syls.length >= 5 && fromEnd === 2 && syls.length >= 5) pen = syls[syls.length - 5];
   if (!pen && lastAcc) {
-    for (var i = syls.indexOf(lastAcc) - 1; i >= 0; i--) if (syls[i].accent) { pen = syls[i]; break; }
+    var lastAt = syls.indexOf(lastAcc);
+    var before = syls[lastAt - 1];
+    var beforeWord = null;
+    if (before) {
+      for (var w = 0; w < words.length; w++) {
+        if (words[w].syls.length === 1 && words[w].syls[0] === before) { beforeWord = words[w]; break; }
+      }
+    }
+    // A monosyllable immediately before the last accent is not the penultimate
+    // accent. The accent of the word before it is, and is supplied if missing.
+    // Tone 5 only. ad cor keeps ad as the last accent, so this does not apply.
+    if (beforeWord) {
+      var earlier = words[words.indexOf(beforeWord) - 1];
+      if (earlier) pen = op1AccentSyl(earlier) || op1ForceAccent(earlier);
+    } else {
+      for (var i = lastAt - 1; i >= 0; i--) if (syls[i].accent) { pen = syls[i]; break; }
+    }
   }
   if (!lastAcc) return 0;
   var li = syls.indexOf(lastAcc);

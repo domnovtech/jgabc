@@ -348,6 +348,7 @@ var d_tones = {'1.':{clef:"c4",
     clef: "c4",
     rules: "dominican-1",
     mediant: "[dominican-1] f gh hr 'ixi hr 'g hr h.",
+    solemn: "[dominican-1-canticle] f gh hr",
     terminations: {
       '1 re': "[dominican-1-termination] hr g f 'gh gr gvFED.",
       '2 sol': "[dominican-1-termination] hr g f 'gh gr g.",
@@ -358,33 +359,41 @@ var d_tones = {'1.':{clef:"c4",
     '1. Dominican': psalm,
     '2. Dominican': { clef: 'f3', rules: 'dominican-2',
       mediant: "[dominican-2] e f hr 'i hr h.",
+      solemn: "[dominican-2-canticle] e f eh hr",
       termination: "[dominican-2-termination] h g e f." },
     '3. Dominican': { clef: 'c4', rules: 'dominican-3',
       mediant: "[dominican-1] g hj jr 'k jr 'i jr j.",
+      solemn: "[dominican-3-canticle] g hj jr",
       terminations: {
         '1': "[dominican-3-termination] j ji hi h g gh.",
         '2': "[dominican-3-termination-2] j h j ih."
       } },
     '4. Dominican': { clef: 'c4', rules: 'dominican-4',
       mediant: "[dominican-4] h gh hr g h i h.",
+      solemn: "[dominican-4-canticle] h gh hr",
       termination: "[dominican-4-termination] g h ih gf e." },
     '4. Dominican alt': { clef: 'c3', rules: 'dominican-4-alt',
       mediant: "[dominican-4-alt] i hi ir h i j i.",
+      solemn: "[dominican-4-alt-canticle] i hi ir",
       termination: "[dominican-4-alt-termination] h i j h f." },
     '5. Dominican': { clef: 'c3', rules: 'dominican-5',
       mediant: "[dominican-5] d f hr 'i hr h.",
+      solemn: "[dominican-5] d f hr 'i hr h.",
       termination: "[dominican-5-termination] h i g h f." },
     '6. Dominican': { clef: 'c4', rules: 'dominican-6',
       mediant: "[dominican-1] f gh hr 'ixi hr 'g hr h.",
+      solemn: "[dominican-1-canticle] f gh hr",
       termination: "[dominican-6-termination] f gh g f." },
     '7. Dominican': { clef: 'c3', rules: 'dominican-7',
       mediant: "[dominican-7] h hi ir k jr i jr j.",
+      solemn: "[dominican-7-canticle] h hi ir",
       terminations: {
         '1': "[dominican-7-termination] i h gf.",
         '2': "[dominican-7-termination-2] i h gi."
       } },
     '8. Dominican': { clef: 'c4', rules: 'dominican-8',
       mediant: "[dominican-8] g h jr 'k jr j.",
+      solemn: "[dominican-8-canticle] g h gj jr",
       terminations: {
         'G': "[dominican-8-termination] i j h g.",
         'c': "[dominican-8-termination-c] h j k j."
@@ -956,6 +965,83 @@ function op1Neumes(parsed, kind) {
   if (kind === 'termination') return { tenor: 'h', prepA: 'g', prepB: 'f', accent: 'gh', after: 'g', final: 'gvFED.' };
   return { init: ['f', 'gh'], tenor: 'h', si: 'ixi', sol: 'g', final: 'h.' };
 }
+// Gospel-canticle mediant: podatus on the penultimate accent (shifted back
+// when the half-verse ends on a monosyllable), then the penultimate and last
+// syllables. Used by Tones I, III, VI and VII.
+function opCanticlePodatus(words, syls) {
+  if (!syls || syls.length < 2) return -1;
+  var last = words[words.length - 1];
+  function before(limit) {
+    for (var i = limit - 1; i >= 0; i--) if (syls[i].accent) return i;
+    return -1;
+  }
+  var psi = before(syls.length - 2);
+  if (last && last.syls.length === 1 && psi >= 0) psi = before(psi);
+  return psi;
+}
+function opPaintPodatusMediant(notes, syls, words, spec, roles) {
+  var psi = opCanticlePodatus(words, syls);
+  // A podatus on the intonation syllables is not a mediant; the line stays on the tenor.
+  if (psi < 2) return syls.length;
+  var n = syls.length;
+  if (spec.before && psi > 0) {
+    notes[psi - 1] = spec.before;
+    if (roles) roles[psi - 1] = 'italic';
+  }
+  notes[psi] = spec.accent;
+  if (roles) roles[psi] = 'bold';
+  for (var i = psi + 1; i < n - 2; i++) if (spec.between) notes[i] = spec.between;
+  if (n >= 2 && psi !== n - 2) {
+    notes[n - 2] = spec.penult;
+    if (roles) roles[n - 2] = 'italic';
+  }
+  notes[n - 1] = spec.last;
+  return spec.before && psi > 0 ? psi - 1 : psi;
+}
+// Two-accent canticle mediant (Tones II, IV, VIII). A final monosyllable
+// takes its accent from the word before it. A longer word accented on the
+// ultima sings that accent as the antepenultimate syllable.
+function opCanticlePair(words, syls) {
+  var lastW = words[words.length - 1];
+  var prev = words[words.length - 2];
+  if (!lastW || !syls.length) return null;
+  var lastSyl = syls[syls.length - 1];
+  var lastTrue = null;
+  if (lastW.syls.length === 1) lastTrue = prev ? (op1AccentSyl(prev) || op1ForceAccent(prev)) : lastW.syls[0];
+  else if (lastSyl.accent && lastW.syls.length >= 3) lastTrue = lastW.syls[lastW.syls.length - 3];
+  else lastTrue = op1AccentSyl(lastW);
+  if (!lastTrue) return null;
+  var li = syls.indexOf(lastTrue);
+  var pen = -1;
+  for (var i = li - 1; i >= 0; i--) if (syls[i].accent) { pen = i; break; }
+  return { pen: pen, last: li };
+}
+function opPaintCanticlePair(notes, syls, words, spec, roles) {
+  var pair = opCanticlePair(words, syls);
+  if (!pair) return syls.length;
+  var p = pair.pen, l = pair.last;
+  if (p > 0) {
+    notes[p - 1] = spec.before;
+    if (roles) roles[p - 1] = 'italic';
+  }
+  if (p >= 0) {
+    notes[p] = spec.pen;
+    if (roles) roles[p] = 'bold';
+  }
+  for (var i = (p >= 0 ? p + 1 : 0); i < l; i++) notes[i] = spec.between;
+  notes[l] = spec.last;
+  if (roles) roles[l] = 'bold';
+  for (var a = l + 1; a < syls.length; a++) notes[a] = spec.after;
+  return p > 0 ? p - 1 : (p >= 0 ? p : l);
+}
+// Magnificat, Benedictus, or a psalm-like canticle (Nunc dimittis and Lauds).
+function dominicanOfficeKind(text) {
+  var fold = op1Fold(String(text || '').replace(/^\uFEFF/, '').slice(0, 160));
+  if (/^(nuncdimittis|benedicite|confitebor|confiteortibi|egodixi|exsultavit|exultavit|cantemus|domineaudivi|audite)/.test(fold)) return 'psalm';
+  if (/^magnificat/.test(fold)) return 'magnificat';
+  if (/^benedictus/.test(fold)) return 'benedictus';
+  return '';
+}
 function applyDominicanTone1(options, rules) {
   var clef = options.clef || (typeof _clef === 'string' ? _clef : 'c4');
   var parsed = op1ReadNotes(options.gabc, clef);
@@ -986,6 +1072,12 @@ function applyDominicanTone1(options, rules) {
     if (ai >= 0 && ai < syls.length - 1) notes[ai] = neum.accent;
     for (var k = ai + 1; k < syls.length - 1; k++) notes[k] = neum.after;
     notes[syls.length - 1] = neum.final;
+  } else if (kind === 'mediant' && rules.indexOf('canticle') >= 0) {
+    tenor = 'h';
+    for (var reset = 0; reset < notes.length; reset++) notes[reset] = tenor;
+    var cRoles = notes.map(function() { return 'plain'; });
+    cadenceAt = options.omitMediant ? syls.length : opPaintPodatusMediant(notes, syls, words, { before: 'hg', accent: 'gixi', between: 'h', penult: 'hg', last: 'gh' }, cRoles);
+    if (options.collectRoles) options.collectRoles.roles = cRoles;
   } else if (kind === 'mediant' && syls.length >= 2) {
     var last = words[words.length - 1];
     var solSyl = syls[syls.length - 2];
@@ -1000,7 +1092,8 @@ function applyDominicanTone1(options, rules) {
     notes[syls.length - 1] = neum.final;
     if (siI >= 0) notes[siI] = neum.si;
   }
-  for (var f = 0; f < syls.length; f++) {
+  var canticleLine = rules.indexOf('canticle') >= 0 || options.noFlex;
+  if (!canticleLine) for (var f = 0; f < syls.length; f++) {
     if (!syls[f].flex || f >= cadenceAt) continue;
     notes[f] = (parsed.toneFlex || 'g');
     for (var b = f - 1; b >= 0; b--) {
@@ -1013,9 +1106,11 @@ function applyDominicanTone1(options, rules) {
     if (parsed && parsed.intonation === 0) includeIntonation = false;
     else includeIntonation = true;
   }
-  if (includeIntonation && kind !== 'termination' && neum.init && cadenceAt >= 2) {
-    if (notes[0] === tenor) notes[0] = neum.init[0];
-    if (syls.length > 1 && notes[1] === tenor) notes[1] = neum.init[1];
+  var cantInit = (rules.indexOf('canticle') >= 0) ? ['f', 'gh'] : (neum.init || null);
+  if (includeIntonation && kind !== 'termination' && cantInit && cadenceAt >= 2) {
+    if (notes[0] === tenor) notes[0] = cantInit[0];
+    if (syls.length > 1 && notes[1] === tenor) notes[1] = cantInit[1];
+    if (cantInit[2] && syls.length > 2 && notes[2] === tenor && cadenceAt >= 3) notes[2] = cantInit[2];
   }
   var flexMark = (typeof gabcFlex === 'string' && gabcFlex) || '†';
   var out = '';
@@ -1319,12 +1414,31 @@ function applyDominicanLater(options, rules) {
     'dominican-7-termination-2': 'i'
   };
   var tenor = (neum && neum.tenor) || tenorByRule[rules] || (parsed.toneTenor || 'h');
-  if (rules.indexOf('termination') < 0 && !short && parsed.dominicanNotes && parsed.dominicanNotes.length >= 3) tenor = opBare(parsed.dominicanNotes[2]);
-  if (rules.indexOf('dominican-4') === 0 && rules.indexOf('termination') < 0) tenor = rules.indexOf('alt') >= 0 ? 'i' : 'h';
+  if (rules.indexOf('termination') < 0 && rules.indexOf('canticle') < 0 && !short && parsed.dominicanNotes && parsed.dominicanNotes.length >= 3) tenor = opBare(parsed.dominicanNotes[2]);
+  if (rules.indexOf('dominican-4') === 0 && rules.indexOf('termination') < 0 && rules.indexOf('canticle') < 0) tenor = rules.indexOf('alt') >= 0 ? 'i' : 'h';
+  if (rules === 'dominican-4-alt-canticle') tenor = 'i';
+  if (rules === 'dominican-2-canticle' || rules === 'dominican-4-canticle') tenor = 'h';
+  if (rules === 'dominican-3-canticle') tenor = 'j';
+  if (rules === 'dominican-7-canticle') tenor = 'i';
+  if (rules === 'dominican-8-canticle') tenor = 'j';
   var notes = syls.map(function() { return tenor; });
   var roles = syls.map(function() { return 'plain'; });
   var cadenceAt = syls.length;
-  if (short) {
+  if (options.omitMediant && rules.indexOf('termination') < 0) {
+    cadenceAt = syls.length;
+  } else if (rules === 'dominican-2-canticle') {
+    cadenceAt = opPaintCanticlePair(notes, syls, words, { before: 'hg', pen: 'hi', between: 'i', last: 'hi', after: 'h' }, roles);
+  } else if (rules === 'dominican-4-canticle') {
+    cadenceAt = opPaintCanticlePair(notes, syls, words, { before: 'hg', pen: 'gi', between: 'i', last: 'hi', after: 'h' }, roles);
+  } else if (rules === 'dominican-4-alt-canticle') {
+    cadenceAt = opPaintCanticlePair(notes, syls, words, { before: 'ih', pen: 'hj', between: 'j', last: 'ij', after: 'i' }, roles);
+  } else if (rules === 'dominican-3-canticle') {
+    cadenceAt = opPaintPodatusMediant(notes, syls, words, { accent: 'jk', between: 'j', penult: 'ih', last: 'hj' }, roles);
+  } else if (rules === 'dominican-7-canticle') {
+    cadenceAt = opPaintPodatusMediant(notes, syls, words, { accent: 'ik', between: 'j', penult: 'ji', last: 'ij' }, roles);
+  } else if (rules === 'dominican-8-canticle') {
+    cadenceAt = opPaintCanticlePair(notes, syls, words, { before: 'ji', pen: 'jk', between: 'k', last: 'jk', after: 'j' }, roles);
+  } else if (short) {
     cadenceAt = opApplyShortMediant(notes, syls, neum);
     if (cadenceAt >= 0 && cadenceAt < roles.length) roles[cadenceAt] = 'bold';
   } else if (rules === 'dominican-2-termination') cadenceAt = opT2Termination(notes, syls, words, roles);
@@ -1361,7 +1475,8 @@ function applyDominicanLater(options, rules) {
   if (options.collectRoles) options.collectRoles.roles = roles;
   if (cadenceAt < 0) cadenceAt = 0;
   var flexNote = parsed.toneFlex || tenor;
-  for (var f = 0; f < syls.length; f++) {
+  var skipFlex = options.noFlex || rules.indexOf('canticle') >= 0;
+  for (var f = 0; f < syls.length && !skipFlex; f++) {
     if (!syls[f].flex || f >= cadenceAt) continue;
     notes[f] = flexNote;
     for (var b = f - 1; b >= 0; b--) {
@@ -1375,9 +1490,16 @@ function applyDominicanLater(options, rules) {
   if (!init && rules === 'dominican-4') init = ['h', 'gh'];
   if (!init && rules === 'dominican-4-alt') init = ['i', 'hi'];
   if (!init && rules === 'dominican-7') init = ['h', 'hi'];
+  if (rules === 'dominican-2-canticle') init = ['e', 'f', 'eh'];
+  if (rules === 'dominican-4-canticle') init = ['h', 'gh'];
+  if (rules === 'dominican-4-alt-canticle') init = ['i', 'hi'];
+  if (rules === 'dominican-3-canticle') init = ['g', 'hj'];
+  if (rules === 'dominican-7-canticle') init = ['h', 'hi'];
+  if (rules === 'dominican-8-canticle') init = ['g', 'h', 'gj'];
   if (includeIntonation && init && rules.indexOf('termination') < 0 && cadenceAt >= 2) {
     if (notes[0] === tenor) notes[0] = init[0];
     if (syls.length > 1 && notes[1] === tenor) notes[1] = init[1];
+    if (init[2] && syls.length > 2 && notes[2] === tenor && cadenceAt >= 3) notes[2] = init[2];
   }
   var flexMark = (typeof gabcFlex === 'string' && gabcFlex) || '†';
   var out = '';
@@ -1990,12 +2112,13 @@ function getWords(syls) {
   return r;
 }
 
-function dominicanEmphasisHtml(text, gabc, clef, format, onlyVowel, verseNumber, prefixFlag, suffixFlag, verseIndex) {
+function dominicanEmphasisHtml(text, gabc, clef, format, onlyVowel, verseNumber, prefixFlag, suffixFlag, verseIndex, extra) {
   var bucket = {};
   applyPsalmTone({
     text: text, gabc: gabc, clef: clef, useOpenNotes: false, useBoldItalic: false,
     format: 'gabc-plain', prefix: false, suffix: false, includeIntonation: false,
-    verseNumber: verseNumber, firstPrefix: true, collectRoles: bucket
+    verseNumber: verseNumber, firstPrefix: true, collectRoles: bucket,
+    noFlex: extra && extra.noFlex, omitMediant: extra && extra.omitMediant
   });
   var roles = bucket.roles || [];
   var f = bi_formats[format] || bi_formats.html;

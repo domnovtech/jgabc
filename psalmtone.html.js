@@ -59,6 +59,21 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
     last_medTones = medTones;
     last_terTones = terTones;
   }
+  var domCanticle = '';
+  var domPsalmLike = false;
+  if ($("#cbSolemn")[0] && $("#cbSolemn")[0].checked && gMediant && String(gMediant.rules || '').indexOf('dominican-') === 0) {
+    var officeKind = dominicanOfficeKind(_syl);
+    if (officeKind === 'psalm') {
+      domPsalmLike = true;
+      var baseTone = g_tones[$("#selTones").val()];
+      if (baseTone && baseTone.mediant) {
+        gMediant = getGabcTones(baseTone.mediant, undefined, false, clef || baseTone.clef);
+        medTones = gMediant;
+      }
+    } else {
+      domCanticle = officeKind || 'canticle';
+    }
+  }
   if(!sameSyl || !sameGSyl || forceGabcUpdate) {
     last_lines = lines;
   }
@@ -91,7 +106,9 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
           italicizeIntonation: italicizeIntonation,
           result: result,
           gabcShort: _gShortMediant,
-          favor: i == 0? 'intonation' : ''
+          favor: i == 0? 'intonation' : '',
+          noFlex: !!domCanticle,
+          omitMediant: domCanticle === 'magnificat' && i === 0
         }) + (line.length == 1? "" : ((gabcFormat||bi_formats.gabc).nbsp) + gabcStar + "(:) " +
           applyPsalmTone({
             text: line[1].trim(),
@@ -106,15 +123,16 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
             prefix: false,
             suffix: true,
             italicizeIntonation: false,
-            favor: 'termination'
+            favor: 'termination',
+            noFlex: !!domCanticle
           })) + " (::)\n";
         if(i==0) {
-          if(!repeatIntonation)gMediant=removeIntonation($.extend(true,{},gMediant));
-          flex = (line[0].indexOf(sym_flex) >= 0);
+          if(domPsalmLike || (!repeatIntonation && !domCanticle))gMediant=removeIntonation($.extend(true,{},gMediant));
+          flex = !domCanticle && (line[0].indexOf(sym_flex) >= 0);
         }
         if(!result.shortened)firstVerse=false;
       } else {
-        if(gabc && !flex) {
+        if(gabc && !flex && !domCanticle) {
           var flexI = line[0].indexOf(sym_flex);
           if(flexI >= 0) {
             var syls = getSyllables(line[0].slice(0,flexI));
@@ -144,8 +162,12 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
           }
         }
         var emphasis = function(half, tones, prefixFlag, suffixFlag) {
-          if (tones && !tones.accents && tones.rules && tones.rules.indexOf('dominican-') === 0 && tones.rules.indexOf('dominican-1') !== 0) {
-            return dominicanEmphasisHtml(half, tones, clef, useFormat, onlyVowels, useNovaVulgata?"":i+1, prefixFlag, suffixFlag, i);
+          var canticleHtml = tones && !tones.accents && tones.rules && tones.rules.indexOf('dominican-') === 0 && (tones.rules.indexOf('dominican-1') !== 0 || tones.rules.indexOf('canticle') >= 0);
+          if (canticleHtml) {
+            return dominicanEmphasisHtml(half, tones, clef, useFormat, onlyVowels, useNovaVulgata?"":i+1, prefixFlag, suffixFlag, i, {
+              noFlex: !!domCanticle,
+              omitMediant: domCanticle === 'magnificat' && i === 0 && prefixFlag
+            });
           }
           return addBoldItalic(half, tones.accents, tones.preparatory, tones.afterLastAccent, useFormat, onlyVowels, useNovaVulgata?"":i+1, prefixFlag, suffixFlag, i);
         };
@@ -237,10 +259,9 @@ function updateText() {
 
 function syncDominicanToneControls(t) {
   var isDom = !!(t && t.rules && String(t.rules).indexOf('dominican-') === 0);
-  $("#cbSolemn").prop('disabled', isDom);
-  if (isDom && $("#cbSolemn")[0].checked) $("#cbSolemn")[0].checked = false;
-  $("#cbSolemn").attr('title', isDom ? 'Dominican Tone I has no solemn form.' : '');
-  $("#versegabc").attr('title', isDom ? 'The [dominican-1] tag at the start of each line selects the Tone I rules. You can edit the pitches after the tag. Removing the tag uses the ordinary psalm-tone engine on that line.' : '');
+  $("#cbSolemn").prop('disabled', false);
+  $("#cbSolemn").attr('title', isDom ? 'Magnificat and Benedictus: intonation on every verse, no flex, and this tone’s canticle mediant. The first verse of the Magnificat has no mediant. Nunc dimittis and the Lauds canticles stay in the psalm form. Terminations are unchanged.' : '');
+  $("#versegabc").attr('title', isDom ? 'The bracket tag selects the Dominican rule. Solemn uses the canticle mediant. Removing the tag uses the ordinary engine on that line.' : '');
 }
 function updateEndings() {
   //update text of delete tone button

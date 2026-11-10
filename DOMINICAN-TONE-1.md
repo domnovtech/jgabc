@@ -16,7 +16,21 @@ Psalm tones only. No Magnificat or Benedictus formulas. Tones II–VIII below ar
 | `7. Dominican` | Clef c3. Intonation ut-re, flex on ut. Mediant uses Tone I’s accent places (the source says so) on fa mi re mi. Endings `1` (final si-la) and `2` (final si-re); the nine word-shapes share one body |
 | `8. Dominican` | Short mediant; endings `G` (4 or 5 syllables) and `c` (4, 5, or 6) |
 
-No canticle tones. Psalm tones I–VIII are in the dropdown.
+No Magnificat or Benedictus entries in the tone dropdown. The Solemn checkbox, on a Dominican tone, is the Gospel-canticle form of that same tone.
+
+## Solemn
+
+Checked, Solemn points Magnificat and Benedictus: intonation on every verse, no flex, and that tone’s canticle mediant. The first word of the text decides which. Magnificat verse 1 has no mediant. Benedictus keeps it. Nunc dimittis and the Lauds canticles (Benedícite, Confitébor, Ego dixi, Exsultávit, Cantémus, Dómine audívi, Audíte) stay in the psalm form even if Solemn is checked. Terminations stay the psalm endings.
+
+| Tone | Canticle mediant |
+| --- | --- |
+| I and VI | Tone I canticle: la-sol before the penultimate accent, sol-si on it, la-sol and sol-la on the last two syllables. A final monosyllable moves that accent back one. |
+| II | Three-syllable intonation, ut-fa on the third. Two accents on fa-sol, fa-mi before the first, sol between, fa after. |
+| III | Psalm intonation. Ut-re on the penultimate accent, si-la and la-ut on the last two syllables. |
+| IV and IV alt | Psalm intonation. Same two accents as Tone II, at Tone IV’s pitch (the alt a fourth higher). |
+| V | The psalm’s short mediant. Only the repeated intonation, the missing flex, and Magnificat verse 1 differ. |
+| VII | Psalm intonation. Tone III’s canticle shape on re-fa, mi-re, re-mi. |
+| VIII | Three-syllable intonation, sol-ut on the third. Tone II’s two accents on ut-re. |
 
 ## Hand-editing
 
@@ -32,3 +46,5 @@ In the verse text, `*` after a syllable forces that syllable acute (`pro*pter`),
 - Tone I’s mediant, which Tones III and VII reuse because their sources say so, still places the adventitious accent. `ex Síon` raises `ex` only because the Tone I prose cites that name, not from a Hebrew list.
 - Syllable division is the tool’s Latin hyphenation (`Pédum` is `Pé-dum`; `tabéscet` is `ta-bé-scet`).
 - Tone I’s mediant B-flat is `ixi`. English spelling is not handled.
+- A diaeresis (`Israël`) is not a written acute. The canticle examples that accent the ultima need that acute written (`Israél`).
+- Solemn on a psalm that is not Magnificat, Benedictus, Nunc dimittis, or a Lauds canticle still uses the canticle mediant and repeats the intonation. The verse-1 mediant is omitted only for a Magnificat incipit.

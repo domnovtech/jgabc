@@ -425,6 +425,8 @@ var Syl = (function(){
             wordSyls = [];
         sylWords.push(wordSyls);
         w = ai.join('');
+        var graveWord = /~/.test(m[2] || '');
+        if (graveWord) m[2] = m[2].replace(/~/g, '');
         if(/^!/.test(m[3])) {
           result.push(syllable(m[3].slice(1),regexWords.lastIndex+1,{nbsp:""}))
           continue;
@@ -520,6 +522,7 @@ var Syl = (function(){
           }
           var tmpSyllable = syllable(tmp,prefix,{nbsp:""});
           prefix = null;
+          if (graveWord) { tmpSyllable.grave = true; graveWord = false; }
           tmpSyllable.word = wordSyls;
           wordSyls.push(tmpSyllable);
           result.push(tmpSyllable);
@@ -537,6 +540,7 @@ var Syl = (function(){
         if(ai.length) tmp[6]='*';
         tmp.index=index+wi;
         var tmpSyllable = syllable(tmp,prefix,{nbsp:""});
+        if (graveWord) { tmpSyllable.grave = true; graveWord = false; }
         tmpSyllable.word = wordSyls;
         if(w.match(/^\s*$/) || (m[1]=='<v>' && m[2]=='\\')) {
           prefix = (tmpSyllable.prepunctuation || '') + m[0];
@@ -724,13 +728,53 @@ function combineToneGabc(tones) {
   });
 }
             
-// One-syllable words left unaccented unless a tone rule gives them one.
-// Pp. 338–341: truly copulative et, ac, atque are grave; disjunctive aut,
-// vel and the negatives non, nec, neque, sed are acute. Prepositions are
-// grave only before their case, and acute when postposed or absolute.
-// There is no case parser, so only these monosyllables are unaccented.
-// A written acute still wins. See DOMINICAN-TONE-1.md.
-var OP1_ATONIC = { a:1, ab:1, ac:1, ad:1, atque:1, cum:1, de:1, e:1, et:1, in:1, inter:1, ob:1, per:1, prae:1, pro:1, sine:1, sub:1 };
+// Lexical accent for Dominican tones, from Processionarium pp. 338–341.
+// The printed lists are examples, not a closed dictionary. pp. 338–339 are
+// acute words (non, nec, neque, sed, aut, vel, and the rest of those
+// classes). Atonic classes are truly copulative et/ac/atque, and
+// prepositions when a word follows them in the half-verse. A preposition
+// that ends the half-verse is treated as absolute or postposed and is
+// accented. cum before a finite-looking verb is the conjunction (acute);
+// other conjunction cums in the fixed Vulgate texts are listed below.
+// at stays acute (copulative at is only tentative in the source).
+// A written acute, a * after the syllable, or a leading ~ wins over this.
+// See DOMINICAN-TONE-1.md.
+var OP_COPULATIVE = { et:1, ac:1, atque:1 };
+var OP_PREPOSITION = {
+  a:1, ab:1, abs:1, absque:1, ad:1, apud:1, ante:1, circa:1, circum:1, cis:1, citra:1,
+  contra:1, coram:1, de:1, e:1, ex:1, erga:1, extra:1, in:1, infra:1, inter:1, intra:1,
+  juxta:1, ob:1, per:1, pro:1, propter:1, prope:1, prae:1, praeter:1, pone:1, penes:1,
+  post:1, secus:1, sub:1, subter:1, subtus:1, supra:1, super:1, sine:1, trans:1, ultra:1,
+  cum:1, clam:1, palam:1
+};
+// Codex examples only, not every word "et similia".
+var OP_FINAL_ACCENT = { adhuc:1, quamobrem:1 };
+// Printed examples only. The Prototype follows this antepenult habit only in part.
+var OP_ANTEPENULT = {
+  aliquando:1, nequando:1, siquando:1, deinde:1, exinde:1, perinde:1,
+  quapropter:1, deorsum:1, delonge:1, siquis:1
+};
+// Next word looks like a finite verb, so cum is the conjunction.
+var OP_CUM_VERB = /(?:^essent$|^erunt$|^sunt$|^est$|^erat$|^erant$|^eram$|^eras$|^sum$|^es$|^estis$|abit$|ebit$|ibit$|avit$|ivit$|erit$|eris$|ero$|erint$|erunt$|isti$|istis$|vero$|bar$|bam$|bas$|bat$|bant$|rem$|ret$|rer$|rent$|runt$|rint$|mur$|mini$|iet$|atur$|etur$|itur$|untur$|antur$|entur$|bitur$)/;
+// Reviewed spots in the fixed Vulgate psalms and canticles where the
+// heuristic cannot see the construction. acute/atonic is an index into seq.
+var DOMINICAN_ACCENT_REVIEWS = [
+  { seq: ['cum','iratus'], acute: 0 },
+  { seq: ['cum','dives'], acute: 0 },
+  { seq: ['cum','multiplicata'], acute: 0 },
+  { seq: ['cum','dominatus'], acute: 0 },
+  { seq: ['cum','declinat'], acute: 0 },
+  { seq: ['cum','deprecor'], acute: 0 },
+  { seq: ['cum','essent'], acute: 0 },
+  { seq: ['cum','exorti'], acute: 0 },
+  { seq: ['cum','confusi'], acute: 0 },
+  { seq: ['cum','mihi','molesti'], acute: 0 },
+  { seq: ['cum','judicaris'], acute: 0 },
+  { seq: ['ultra','non'], acute: 0 },
+  { seq: ['ultra','magnificare'], acute: 0 },
+  { seq: ['ultra','deus'], acute: 0 },
+  { seq: ['ultra','ad'], acute: 0 }
+];
 
 function op1Fold(s) {
   return String(s || '').toLowerCase()
@@ -765,27 +809,82 @@ function op1ForceAccent(word) {
   syl.accent = true;
   return syl;
 }
-function op1MarkAccents(words) {
-  words.forEach(function(word) {
-    var syls = word.syls;
-    var written = false;
-    syls.forEach(function(s) {
-      s.accent = regexAccent.test(s.sylnospace || '');
-      if (s.accent) written = true;
+function op1WordKey(word) {
+  return op1Fold(word.syls.map(function(s) { return s.sylnospace || ''; }).join(''));
+}
+function op1LexicalAccent(syls) {
+  if (syls.length === 1) {
+    // One-letter syllables are the euouae vowels, not lexical words.
+    syls[0].accent = op1Fold(syls[0].sylnospace).length >= 2;
+  } else if (syls.length === 2) {
+    syls[0].accent = true;
+  } else {
+    var cands = syls.slice(-3, -1).filter(function(s) {
+      return /[AEIOUYÆŒæœ]/.test(s.sylnospace || '');
     });
-    if (written) return;
-    if (syls.length === 1) {
-      var key = op1Fold(syls[0].sylnospace);
-      // One-letter syllables are the euouae vowels, not lexical words.
-      syls[0].accent = key.length >= 2 && !OP1_ATONIC[key];
-    } else if (syls.length === 2) {
-      syls[0].accent = true;
-    } else {
-      var cands = syls.slice(-3, -1).filter(function(s) {
-        return /[AEIOUYÆŒæœ]/.test(s.sylnospace || '');
-      });
-      if (cands.length === 1) cands[0].accent = true;
+    if (cands.length === 1) cands[0].accent = true;
+  }
+}
+function op1ReviewFlags(words) {
+  var keys = words.map(op1WordKey);
+  var flags = new Array(words.length);
+  DOMINICAN_ACCENT_REVIEWS.forEach(function(rev) {
+    for (var i = 0; i + rev.seq.length <= keys.length; i++) {
+      var match = true;
+      for (var j = 0; j < rev.seq.length; j++) if (keys[i + j] !== rev.seq[j]) match = false;
+      if (!match) continue;
+      if (rev.acute != null) flags[i + rev.acute] = 'acute';
+      if (rev.atonic != null) flags[i + rev.atonic] = 'atonic';
     }
+  });
+  return flags;
+}
+function op1MarkAccents(words) {
+  var flags = op1ReviewFlags(words);
+  words.forEach(function(word, wi) {
+    var syls = word.syls;
+    var grave = syls.some(function(s) { return s.grave; });
+    var writtens = [];
+    var star = null;
+    syls.forEach(function(s) {
+      if (regexAccent.test(s.sylnospace || '')) writtens.push(s);
+      if (s.separator === '*') star = s;
+    });
+    syls.forEach(function(s) { s.accent = false; });
+    if (writtens.length) {
+      writtens.forEach(function(s) { s.accent = true; });
+      return;
+    }
+    if (star) { star.accent = true; return; }
+    if (grave || flags[wi] === 'atonic') return;
+    var key = op1WordKey(word);
+    if (flags[wi] === 'acute') { op1LexicalAccent(syls); return; }
+    if (OP_COPULATIVE[key]) return;
+    var next = words[wi + 1];
+    if (key === 'cum' && next && OP_CUM_VERB.test(op1WordKey(next))) {
+      op1LexicalAccent(syls);
+      return;
+    }
+    if (OP_PREPOSITION[key]) {
+      // A following word stands in for the governed case. The end of the
+      // half-verse stands in for absolute or postposed use.
+      if (next) return;
+      op1LexicalAccent(syls);
+      return;
+    }
+    if (OP_FINAL_ACCENT[key]) {
+      syls[syls.length - 1].accent = true;
+      return;
+    }
+    if (OP_ANTEPENULT[key] && syls.length >= 3) {
+      syls[syls.length - 3].accent = true;
+      return;
+    }
+    if (OP_ANTEPENULT[key] && syls.length === 2) {
+      syls[0].accent = true;
+      return;
+    }
+    op1LexicalAccent(syls);
   });
 }
 function op1Before(syls, syl, n) {
@@ -814,6 +913,11 @@ function op1PsalmSi(words, syls) {
       var onFirst = idx === 0 && last.syls.length >= 2 && last.syls.length <= 3;
       if ((last.syls.length === 4 && fromEnd === 2) || (last.syls.length === 3 && fromEnd === 1) || (onFirst && prev.syls.length >= 2)) {
         return op1AccentSyl(prev) || op1ForceAccent(prev);
+      }
+      // Tone I names ex Sion: a two-syllable Hebrew name, and any unaccented
+      // word before it. Only that cited name, not a Hebrew list.
+      if (last.syls.length === 2 && idx === 0 && !op1AccentSyl(prev) && op1WordKey(last) === 'sion') {
+        return op1ForceAccent(prev);
       }
     }
     if (last.syls.length === 1 && prev && prev.syls.length >= 2 && !op1Written(prev)) {

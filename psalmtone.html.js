@@ -259,6 +259,7 @@ function updateText() {
 
 function syncDominicanToneControls(t) {
   var isDom = !!(t && t.rules && String(t.rules).indexOf('dominican-') === 0);
+  $("#lnkDominicanTones").prop('hidden', !isDom);
   $("#cbSolemn").prop('disabled', false);
   $("#cbSolemn").attr('title', isDom ? 'Magnificat and Benedictus: intonation on every verse, no flex, and this tone’s canticle mediant. The first verse of the Magnificat has no mediant. Nunc dimittis and the Lauds canticles stay in the psalm form. Terminations are unchanged.' : '');
   $("#versegabc").attr('title', isDom ? 'The bracket tag selects the Dominican rule. Solemn uses the canticle mediant. Removing the tag uses the ordinary engine on that line.' : '');

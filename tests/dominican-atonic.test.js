@@ -67,8 +67,8 @@ describe('Dominican lexical accent', function() {
 describe('Tone I keeps its own cadence on top of those accents', function() {
   test('et stays between the accents; Sion is accented on the last syllable', function() {
     expect(pitches('Patri et Fílio', tone1)).toBe('Pa=ixi tri=h et=h Fí=g li=g o=h');
-    expect(pitches('Dóminus ex Síon', tone1)).toBe('Dó=ixi mi=h nus=h ex=h Sí=g on=h');
-    expect(pitches('Dóminus ex Sion', tone1)).toBe('Dó=ixi mi=h nus=h ex=h Si=g on=h');
+    expect(pitches('Dóminus ex Síon', tone1)).toBe('Dó=h mi=h nus=h ex=ixi Sí=g on=h');
+    expect(pitches('Dóminus ex Sion', tone1)).toBe('Dó=h mi=h nus=h ex=ixi Si=g on=h');
     expect(pitches('Super eum', tone1)).toBe('Su=ixi per=h e=g um=h');
   });
   test('an atonic disyllable before a monosyllable receives the adventitious accent', function() {

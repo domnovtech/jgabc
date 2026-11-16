@@ -15,7 +15,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'psalmtone.js'),'utf8'), context)
 
 function htmlFor(formula, text, clef) {
   const parsed = context.getGabcTones(formula, undefined, false, clef || 'c4');
-  if (context.dominicanUsesRoleHtml(parsed)) {
+  if (context.dominicanUsesRoleHtml(parsed, text)) {
     return context.dominicanEmphasisHtml(text, parsed, clef || 'c4', 'html', false, 2, false, false, 1);
   }
   return context.addBoldItalic(text, parsed.accents, parsed.preparatory, parsed.afterLastAccent, 'html', false, 2, false, false, 1);
@@ -74,6 +74,17 @@ describe('HTML cadence emphasis', function() {
     expect(boldText(htmlFor(g['8. Dominican'].mediant, 'in Si*on'))).toEqual(['Si']);
     expect(boldText(htmlFor(g['5. Dominican'].termination, 'fíliæ ~Sion', 'c3'))).toEqual([]);
     expect(boldText(htmlFor(g['8. Dominican'].mediant, 'Dómino meo'))).toEqual(['me']);
+    expect(tags(htmlFor(g['1. Dominican'].mediant, 'Dóminus ex Sion'))).toBe('Dóminus <b>ex</b> <b>Si</b>on');
+    expect(tags(htmlFor(g['1. Dominican'].mediant, 'Israël Deus'))).toBe('Isra<b>ël</b> <b>De</b>us');
+    expect(tags(htmlFor(g['3. Dominican'].mediant, 'Dóminus éx Sión'))).toBe('Dóminus <b>éx</b> <b>Si</b>ón');
+    expect(tags(htmlFor(g['3. Dominican'].mediant, 'Dóminus ex Sion'))).toBe('Dóminus <b>ex</b> <b>Si</b>on');
+    expect(tags(htmlFor(g['7. Dominican'].mediant, 'Dóminus ex Sion', 'c3'))).toBe('Dóminus <b>ex</b> <b>Si</b>on');
+    expect(tags(htmlFor(g['2. Dominican'].termination, 'Qui custódit Israël', 'f3'))).toBe('Qui custó<i>dit</i> <b>Is</b>raël');
+    expect(tags(htmlFor(g['8. Dominican'].terminations.G, 'qui custódit Israël'))).toBe('qui cus<i>tó</i><b>dit</b> Israël');
+    expect(tags(htmlFor(g['8. Dominican'].mediant, 'Deus in Sion:'))).toBe('Deus in Si<b>on</b>:');
+    expect(tags(htmlFor(g['8. Dominican'].mediant, 'Et ipse rédimet Israël'))).toBe('Et ipse rédimet Isra<b>ël</b>');
+    expect(tags(htmlFor(g['8. Dominican'].mediant, 'Líbera, Deus, Israël'))).toBe('Líbera, Deus, Isra<b>ël</b>');
+    expect(tags(htmlFor(g['1. Dominican'].mediant, 'secúndum magnam misericórdiam tuam'))).toBe('secúndum magnam miseri<b>cór</b>diam <b>tu</b>am');
   });
   test('bold syllables are inside the GABC cadence, not the reciting tone', function() {
     const cases = [

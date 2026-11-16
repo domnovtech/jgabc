@@ -256,6 +256,38 @@ describe('Tone VII', function() {
   });
 });
 
+describe('Book examples for Sion and Israel', function() {
+  test('Tone II termination doubles ut on Israël', function() {
+    expect(pitches(chant('Qui custódit Israël', tone('2. Dominican').termination, 'f3'))).toBe('Qui=h cus=h tó=h dit=g Is=e ra=e ël=f');
+  });
+  test('Tone VII mediant gives the penultimate accent to ex', function() {
+    expect(pitches(chant('Dóminus ex Sion', tone('7. Dominican').mediant, 'c3'))).toBe('Dó=i mi=i nus=i ex=k Si=i on=j');
+    expect(pitches(chant('Israël Deus', tone('7. Dominican').mediant, 'c3'))).toBe('Is=i ra=i ël=k De=i us=j');
+  });
+  test('Tone III mediant matches the book for éx Sión and Israël Deus', function() {
+    var med = tone('3. Dominican').mediant;
+    expect(pitches(chant('Dóminus éx Sión', med))).toBe('Dó=j mi=j nus=j éx=k Si=i ón=j');
+    expect(pitches(chant('Dóminus ex Sion', med))).toBe('Dó=j mi=j nus=j ex=k Si=i on=j');
+    expect(pitches(chant('Israël Deus', med))).toBe('Is=j ra=j ël=k De=i us=j');
+  });
+  test('Tone IV alt and Tone V keep the raised ultima on Sion', function() {
+    expect(pitches(chant('Dóminus ex Sion', tone('4. Dominican alt').mediant, 'c3'))).toBe('Dó=i mi=i nus=i ex=h Si=i on=j');
+    expect(pitches(chant('Dóminus ex Sion', tone('5. Dominican').mediant, 'c3'))).toBe('Dó=h mi=h nus=h ex=h Si=h on=i');
+  });
+  test('Tone VIII termination starts a Hebrew name of three syllables on the fifth', function() {
+    expect(pitches(chant('qui custódit Israël', tone('8. Dominican').terminations.G))).toBe('qui=j cus=j tó=i dit=j Is=h ra=g ël=g');
+    expect(pitches(chant('qui custódit Israel', tone('8. Dominican').terminations.G))).toBe('qui=j cus=j tó=i dit=j Is=h ra=g el=g');
+    expect(pitches(chant('Tuis Jerúsalem', tone('8. Dominican').terminations.G))).toBe('Tu=j is=i Je=j rú=h sa=g lem=g');
+  });
+  test('Tone VIII mediant still raises the ultima of Sion and Israel', function() {
+    var med = tone('8. Dominican').mediant;
+    expect(pitches(chant('Deus in Sion:', med))).toBe('De=j us=j in=j Si=j on=k');
+    expect(pitches(chant('Te decet hymnus, Deus, in Sion:', med))).toBe('Te=j de=j cet=j hym=j nus=j De=j us=j in=j Si=j on=k');
+    expect(pitches(chant('Et ipse rédimet Israël', med))).toBe('Et=j ip=j se=j réd=j i=j met=j Is=j ra=j ël=k');
+    expect(pitches(chant('Líbera, Deus, Israël', med))).toBe('Lí=j be=j ra=j De=j us=j Is=j ra=j ël=k');
+  });
+});
+
 describe('Roman tone 2 is untouched', function() {
   test('formula and output', function() {
     expect(context.g_tones['2.'].mediant).toBe("e f hr 'i hr h.");

@@ -924,6 +924,12 @@ function op1PsalmSi(words, syls) {
   if (lastAcc) {
     var idx = last.syls.indexOf(lastAcc);
     var fromEnd = last.syls.length - 1 - idx;
+    // Tone I (and III and VII, which cite it): a two-syllable Hebrew name
+    // takes the accent on its ultima, and any unaccented word before it
+    // receives the penultimate accent. The book’s example is éx Sión.
+    if (prev && last.syls.length === 2 && op1WordKey(last) === 'sion' && !op1AccentSyl(prev)) {
+      return op1ForceAccent(prev);
+    }
     if (fromEnd !== 0 && ((last.syls.length >= 5 && fromEnd === 2) || (last.syls.length >= 4 && fromEnd === 1))) {
       return op1Before(syls, lastAcc, 2);
     }
@@ -1095,6 +1101,12 @@ function applyDominicanTone1(options, rules) {
     for (var s = solI; s < syls.length - 1; s++) notes[s] = neum.sol;
     notes[syls.length - 1] = neum.final;
     if (siI >= 0) notes[siI] = neum.si;
+    if (options.collectRoles) {
+      var medRoles = syls.map(function() { return 'plain'; });
+      if (siI >= 0) medRoles[siI] = 'bold';
+      if (solI >= 0) medRoles[solI] = 'bold';
+      options.collectRoles.roles = medRoles;
+    }
   }
   var canticleLine = rules.indexOf('canticle') >= 0 || options.noFlex;
   if (!canticleLine) for (var f = 0; f < syls.length; f++) {
@@ -1140,11 +1152,18 @@ function opPaintEnd(notes, pattern, roles, boldAt) {
     if (roles) roles[start + i] = i < boldAt ? 'italic' : i === boldAt ? 'bold' : 'plain';
   }
 }
+function opGraveWord(word) {
+  return !!(word && word.syls.some(function(s) { return s.grave; }));
+}
 function opExtendedCadence(words) {
   var last = words[words.length - 1];
   var prev = words[words.length - 2];
   if (!last) return false;
   if (last.syls.length >= 3 && opFromEnd(last) === 2) return true;
+  // Tones III, IV, VI and VIII each start the longer termination when the
+  // last word is a Hebrew name of three or more syllables. Israël is that
+  // name; its own accent stays on the ultima, so fromEnd is not 2.
+  if (last.syls.length >= 3 && op1WordKey(last) === 'israel' && !opGraveWord(last)) return true;
   if (last.syls.length === 1 && prev && prev.syls.length >= 2) return true;
   return false;
 }
@@ -1166,6 +1185,9 @@ function opT2UtDoubled(words) {
   var prev = words[words.length - 2];
   if (!last) return false;
   if (last.syls.length >= 3 && opFromEnd(last) === 2) return true;
+  // Tone II doubles ut for a Hebrew word of three or more syllables
+  // (Qui custódit Israël: dit mi, Is-ra ut, ël re), not from the ultima.
+  if (last.syls.length >= 3 && op1WordKey(last) === 'israel' && !opGraveWord(last)) return true;
   if (last.syls.length === 2) return false;
   if (last.syls.length === 1 && prev) {
     if (prev.syls.length === 1) return false;
@@ -2120,10 +2142,21 @@ function getWords(syls) {
 // marks, and also for the short mediants. Those formulas do contain one
 // accent mark, but addBoldItalic reads the Latin syllabifier, which still
 // accents Sion and Israel on an earlier syllable.
-function dominicanUsesRoleHtml(tones) {
+function opHebrewCadenceText(text) {
+  var parts = String(text || '').split(/[^A-Za-zÀ-ÿÆŒæœ]+/).map(op1Fold).filter(function(w) { return w; });
+  if (!parts.length) return false;
+  var last = parts[parts.length - 1];
+  var prev = parts.length > 1 ? parts[parts.length - 2] : '';
+  return last === 'sion' || last === 'israel' || prev === 'sion' || prev === 'israel';
+}
+function dominicanUsesRoleHtml(tones, text) {
   if (!tones || !tones.rules || tones.rules.indexOf('dominican-') !== 0) return false;
   if (!tones.accents && (tones.rules.indexOf('dominican-1') !== 0 || tones.rules.indexOf('canticle') >= 0)) return true;
-  return tones.rules === 'dominican-2' || tones.rules === 'dominican-5' || tones.rules === 'dominican-8';
+  if (tones.rules === 'dominican-2' || tones.rules === 'dominican-5' || tones.rules === 'dominican-8') return true;
+  // Tone I and Tone III mediants otherwise follow the formula’s accent count.
+  // Sion and Israel move the cadence off those Latin accents, so the HTML
+  // follows the syllables the mediant painter marks.
+  return tones.rules === 'dominican-1' && opHebrewCadenceText(text);
 }
 function dominicanEmphasisHtml(text, gabc, clef, format, onlyVowel, verseNumber, prefixFlag, suffixFlag, verseIndex, extra) {
   var bucket = {};

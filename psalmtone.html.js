@@ -162,8 +162,7 @@ function updateEditor(forceGabcUpdate,_syl,_gSyl,_gShortMediant,clef) {
           }
         }
         var emphasis = function(half, tones, prefixFlag, suffixFlag) {
-          var canticleHtml = tones && !tones.accents && tones.rules && tones.rules.indexOf('dominican-') === 0 && (tones.rules.indexOf('dominican-1') !== 0 || tones.rules.indexOf('canticle') >= 0);
-          if (canticleHtml) {
+          if (dominicanUsesRoleHtml(tones)) {
             return dominicanEmphasisHtml(half, tones, clef, useFormat, onlyVowels, useNovaVulgata?"":i+1, prefixFlag, suffixFlag, i, {
               noFlex: !!domCanticle,
               omitMediant: domCanticle === 'magnificat' && i === 0 && prefixFlag

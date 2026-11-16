@@ -758,6 +758,10 @@ var OP_PREPOSITION = {
 };
 // Codex examples only, not every word "et similia".
 var OP_FINAL_ACCENT = { adhuc:1, quamobrem:1 };
+// Hebrew names accented on the ultima. Sion is indeclinable in the Vulgate
+// psalter (Sion, Sión, Síon). Israel is the citation form (Israël, Israél);
+// the Latin genitive Israélis keeps its own written accent. A * or ~ wins.
+var OP_ULTIMA = { sion:1, israel:1 };
 // Printed examples only. The Prototype follows this antepenult habit only in part.
 var OP_ANTEPENULT = {
   aliquando:1, nequando:1, siquando:1, deinde:1, exinde:1, perinde:1,
@@ -860,13 +864,17 @@ function op1MarkAccents(words) {
       if (s.separator === '*') star = s;
     });
     syls.forEach(function(s) { s.accent = false; });
+    if (star) { star.accent = true; return; }
+    if (grave || flags[wi] === 'atonic') return;
+    var key = op1WordKey(word);
+    if (OP_ULTIMA[key]) {
+      syls[syls.length - 1].accent = true;
+      return;
+    }
     if (writtens.length) {
       writtens.forEach(function(s) { s.accent = true; });
       return;
     }
-    if (star) { star.accent = true; return; }
-    if (grave || flags[wi] === 'atonic') return;
-    var key = op1WordKey(word);
     if (flags[wi] === 'acute') { op1LexicalAccent(syls); return; }
     if (OP_COPULATIVE[key]) return;
     var next = words[wi + 1];
@@ -902,7 +910,8 @@ function op1Before(syls, syl, n) {
   return syls[Math.max(0, i - n)] || null;
 }
 // Penultimate accent of the Tone I psalm mediant. Only the rules stated for
-// this tone; Hebrew is not inferred from a final accent.
+// this tone. Sion and Israel are ultima-accented in op1MarkAccents; a final
+// accent on any other word is not treated as Hebrew.
 function op1PsalmSi(words, syls) {
   var last = words[words.length - 1];
   var prev = words[words.length - 2];
@@ -922,11 +931,6 @@ function op1PsalmSi(words, syls) {
       var onFirst = idx === 0 && last.syls.length >= 2 && last.syls.length <= 3;
       if ((last.syls.length === 4 && fromEnd === 2) || (last.syls.length === 3 && fromEnd === 1) || (onFirst && prev.syls.length >= 2)) {
         return op1AccentSyl(prev) || op1ForceAccent(prev);
-      }
-      // Tone I names ex Sion: a two-syllable Hebrew name, and any unaccented
-      // word before it. Only that cited name, not a Hebrew list.
-      if (last.syls.length === 2 && idx === 0 && !op1AccentSyl(prev) && op1WordKey(last) === 'sion') {
-        return op1ForceAccent(prev);
       }
     }
     if (last.syls.length === 1 && prev && prev.syls.length >= 2 && !op1Written(prev)) {
@@ -2112,6 +2116,15 @@ function getWords(syls) {
   return r;
 }
 
+// Dominican HTML uses the painter's roles when the formula has no accent
+// marks, and also for the short mediants. Those formulas do contain one
+// accent mark, but addBoldItalic reads the Latin syllabifier, which still
+// accents Sion and Israel on an earlier syllable.
+function dominicanUsesRoleHtml(tones) {
+  if (!tones || !tones.rules || tones.rules.indexOf('dominican-') !== 0) return false;
+  if (!tones.accents && (tones.rules.indexOf('dominican-1') !== 0 || tones.rules.indexOf('canticle') >= 0)) return true;
+  return tones.rules === 'dominican-2' || tones.rules === 'dominican-5' || tones.rules === 'dominican-8';
+}
 function dominicanEmphasisHtml(text, gabc, clef, format, onlyVowel, verseNumber, prefixFlag, suffixFlag, verseIndex, extra) {
   var bucket = {};
   applyPsalmTone({

@@ -15,7 +15,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'psalmtone.js'),'utf8'), context)
 
 function htmlFor(formula, text, clef) {
   const parsed = context.getGabcTones(formula, undefined, false, clef || 'c4');
-  if (parsed.rules && !parsed.accents && parsed.rules.indexOf('dominican-1') !== 0) {
+  if (context.dominicanUsesRoleHtml(parsed)) {
     return context.dominicanEmphasisHtml(text, parsed, clef || 'c4', 'html', false, 2, false, false, 1);
   }
   return context.addBoldItalic(text, parsed.accents, parsed.preparatory, parsed.afterLastAccent, 'html', false, 2, false, false, 1);
@@ -62,6 +62,18 @@ describe('HTML cadence emphasis', function() {
     expect(tags(htmlFor(g['7. Dominican'].terminations['1'], 'dele iniquitátem meam', 'c3'))).not.toContain('<b>de</b>');
     expect(tags(htmlFor(g['7. Dominican'].mediant, 'Non stetit', 'c3'))).toBe('<b>Non</b> <b>ste</b>tit');
     expect(boldText(htmlFor(g['7. Dominican'].terminations['2'], 'Diligéntibus te', 'c3'))).toEqual(['gén']);
+  });
+  test('Sion and Israel are marked on the last syllable', function() {
+    const t8 = htmlFor(g['8. Dominican'].mediant, 'Te decet hymnus, Deus, in Sion:');
+    expect(tags(t8)).toBe('Te decet hymnus, Deus, in Si<b>on</b>:');
+    expect(boldText(t8)).toEqual(['on']);
+    expect(tags(htmlFor(g['8. Dominican'].mediant, 'Te decet hymnus, Deus, in Síon'))).toBe('Te decet hymnus, Deus, in Sí<b>on</b>');
+    expect(boldText(htmlFor(g['5. Dominican'].termination, 'fíliæ Sion', 'c3'))).toEqual(['fí', 'on']);
+    expect(tags(htmlFor(g['8. Dominican'].mediant, 'salutáre Israël'))).toBe('salutáre Isra<b>ël</b>');
+    expect(boldText(htmlFor(g['5. Dominican'].termination, 'Deus Israël', 'c3'))).toEqual(['De', 'ël']);
+    expect(boldText(htmlFor(g['8. Dominican'].mediant, 'in Si*on'))).toEqual(['Si']);
+    expect(boldText(htmlFor(g['5. Dominican'].termination, 'fíliæ ~Sion', 'c3'))).toEqual([]);
+    expect(boldText(htmlFor(g['8. Dominican'].mediant, 'Dómino meo'))).toEqual(['me']);
   });
   test('bold syllables are inside the GABC cadence, not the reciting tone', function() {
     const cases = [

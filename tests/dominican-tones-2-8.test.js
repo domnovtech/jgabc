@@ -103,6 +103,9 @@ describe('Tone V', function() {
     expect(pitches(chant('et morti non trádidit me', g, 'c3'))).toBe('et=h mor=i ti=h non=g trá=h di=f dit=f me=f');
     expect(pitches(chant('Pestiléntiæ non sedit', g, 'c3'))).toBe('Pes=h ti=h lén=i ti=h æ=h non=g se=h dit=f');
     expect(pitches(chant('Qui convertúntur ad cor', g, 'c3'))).toBe('Qui=h con=h ver=h tún=i tur=g ad=h cor=f');
+    expect(pitches(chant('fíliæ Sion', g, 'c3'))).toBe('fí=i li=h æ=h Si=g on=h');
+    expect(pitches(chant('fíliæ ~Sion', g, 'c3'))).toBe('fí=h li=h æ=h Si=h on=h');
+    expect(pitches(chant('Deus Israël', g, 'c3'))).toBe('De=i us=h Is=h ra=g ël=h');
   });
 });
 
@@ -128,6 +131,13 @@ describe('Tone VIII', function() {
     expect(pitches(chant('Dómino meo', t.mediant))).toBe('Dó=j mi=j no=j me=k o=j');
     expect(pitches(chant('Dicta sunt de te', t.mediant))).toBe('Dic=j ta=j sunt=j de=j te=k');
     expect(pitches(chant('Jerúsalém', t.mediant))).toBe('Je=j rú=j sa=j lém=k');
+    expect(pitches(chant('Te decet hymnus, Deus, in Sion:', t.mediant))).toBe('Te=j de=j cet=j hym=j nus=j De=j us=j in=j Si=j on=k');
+    expect(pitches(chant('Te decet hymnus, Deus, in Sión', t.mediant))).toBe('Te=j de=j cet=j hym=j nus=j De=j us=j in=j Si=j ón=k');
+    expect(pitches(chant('Te decet hymnus, Deus, in Síon', t.mediant))).toBe('Te=j de=j cet=j hym=j nus=j De=j us=j in=j Sí=j on=k');
+    expect(pitches(chant('in Si*on', t.mediant))).toBe('in=j Si=k on=j');
+    expect(pitches(chant('salutáre Israël', t.mediant))).toBe('sa=j lu=j tá=j re=j Is=j ra=j ël=k');
+    expect(pitches(chant('Is*raël', t.mediant))).toBe('Is=k ra=j ël=j');
+    expect(pitches(chant('dispersiónes Israélis', t.mediant))).toBe('di=j sper=j si=j ó=j nes=j Is=j ra=j é=k lis=j');
   });
   test('first termination', function() {
     var g = t.terminations.G;

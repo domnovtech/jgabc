@@ -105,8 +105,10 @@ describe('Dominican Tone I mediant', function() {
     expect(pitches(chant('misericórdia', med))).toBe('mi=h se=ixi ri=h cór=g di=g a=h');
     expect(pitches(chant('benedíctum', med))).toBe('be=ixi ne=h díc=g tum=h');
   });
-  test('ex Síon, with the written accent and no Hebrew list', function() {
-    expect(pitches(chant('Dóminus ex Síon', med))).toBe('Dó=h mi=h nus=h ex=ixi Sí=g on=h');
+  test('Sion is accented on its last syllable', function() {
+    expect(pitches(chant('Dóminus ex Sion', med))).toBe('Dó=ixi mi=h nus=h ex=h Si=g on=h');
+    expect(pitches(chant('Dóminus ex Síon', med))).toBe('Dó=ixi mi=h nus=h ex=h Sí=g on=h');
+    expect(pitches(chant('Dóminus ex Sión', med))).toBe('Dó=ixi mi=h nus=h ex=h Si=g ón=h');
   });
   test('cívitas after ut', function() {
     expect(pitches(chant('ut cívitas', med))).toBe('ut=ixi cí=g vi=g tas=h');
